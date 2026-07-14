@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-14T14:58:10.573Z",
+  "generatedAt": "2026-07-14T15:49:15.428Z",
   "collections": [
     {
       "name": "users",
@@ -137,9 +137,9 @@
         }
       ],
       "indexes": [
-        "CREATE INDEX idx_pedve012_tipo_entrega ON pedve012 (tipo_entrega)",
-        "CREATE INDEX idx_pedve012_envio_liberacao ON pedve012 (envio_liberacao)",
-        "CREATE INDEX idx_pedve012_prev_entr ON pedve012 (prev_entr)"
+        "CREATE INDEX `idx_pedve012_tipo_entrega` ON `pedve012` (tipo_entrega)",
+        "CREATE INDEX `idx_pedve012_envio_liberacao` ON `pedve012` (envio_liberacao)",
+        "CREATE INDEX `idx_pedve012_prev_entr` ON `pedve012` (prev_entr)"
       ]
     },
     {
