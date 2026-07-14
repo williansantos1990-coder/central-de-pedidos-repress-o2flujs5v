@@ -222,29 +222,66 @@ routerAdd(
       if (typeof val === 'object' && val !== null && typeof val.getFullYear === 'function') {
         return val.getFullYear() + '-' + pad2(val.getMonth() + 1) + '-' + pad2(val.getDate())
       }
-      if (typeof val === 'string' && val.length > 0) {
-        var dmyMatch = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-        if (dmyMatch) {
-          return (
-            dmyMatch[3] +
-            '-' +
-            pad2(parseInt(dmyMatch[2], 10)) +
-            '-' +
-            pad2(parseInt(dmyMatch[1], 10))
-          )
-        }
-        var ymdMatch = val.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
-        if (ymdMatch) {
-          return (
-            ymdMatch[1] +
-            '-' +
-            pad2(parseInt(ymdMatch[2], 10)) +
-            '-' +
-            pad2(parseInt(ymdMatch[3], 10))
-          )
+      if (typeof val !== 'string' || val.length === 0) return null
+      var trimmed = val.trim()
+
+      var serialMatch = trimmed.match(/^(\d+(\.\d+)?)$/)
+      if (serialMatch) {
+        var serial = parseFloat(serialMatch[1])
+        if (serial > 1 && serial < 60000) {
+          try {
+            var serialDateObj = new Date(Math.round((serial - 25569) * 86400 * 1000))
+            return (
+              serialDateObj.getUTCFullYear() +
+              '-' +
+              pad2(serialDateObj.getUTCMonth() + 1) +
+              '-' +
+              pad2(serialDateObj.getUTCDate())
+            )
+          } catch (sde) {}
         }
       }
-      return val
+
+      var dmyMatch = trimmed.match(
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
+      )
+      if (dmyMatch) {
+        return (
+          dmyMatch[3] +
+          '-' +
+          pad2(parseInt(dmyMatch[2], 10)) +
+          '-' +
+          pad2(parseInt(dmyMatch[1], 10))
+        )
+      }
+
+      var ymdMatch = trimmed.match(
+        /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
+      )
+      if (ymdMatch) {
+        return (
+          ymdMatch[1] +
+          '-' +
+          pad2(parseInt(ymdMatch[2], 10)) +
+          '-' +
+          pad2(parseInt(ymdMatch[3], 10))
+        )
+      }
+
+      var dmyDashMatch = trimmed.match(
+        /^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
+      )
+      if (dmyDashMatch) {
+        return (
+          dmyDashMatch[3] +
+          '-' +
+          pad2(parseInt(dmyDashMatch[2], 10)) +
+          '-' +
+          pad2(parseInt(dmyDashMatch[1], 10))
+        )
+      }
+
+      return null
     }
 
     function decodeXmlEntities(str) {
@@ -802,6 +839,47 @@ routerAdd(
       })
     }
 
+    var dateValidationErrors = []
+    for (var dvi = 0; dvi < parsed.length; dvi++) {
+      var dvp = parsed[dvi]
+      for (var dvr = 0; dvr < dvp.filteredRows.length; dvr++) {
+        var dvrow = dvp.filteredRows[dvr]
+        for (var dvhm = 0; dvhm < dvp.headerMap.length; dvhm++) {
+          var dvColIdx = dvp.headerMap[dvhm].col
+          var dvFieldName = dvp.headerMap[dvhm].field
+          if (dvFieldName === 'id' || dvFieldName === 'created' || dvFieldName === 'updated')
+            continue
+          var dvValue = dvrow[dvColIdx]
+          if (dvValue === undefined || dvValue === null || dvValue === '') continue
+          var dvField = null
+          for (var dvfi = 0; dvfi < dvp.fields.length; dvfi++) {
+            if (dvp.fields[dvfi].name === dvFieldName) {
+              dvField = dvp.fields[dvfi]
+              break
+            }
+          }
+          if (dvField && dvField.type === 'date') {
+            var dvFormatted = formatDateValue(dvValue)
+            if (dvFormatted === null) {
+              dateValidationErrors.push(
+                dvp.config.label +
+                  ' - Linha ' +
+                  (dvr + 2) +
+                  ', coluna "' +
+                  dvFieldName +
+                  '": valor "' +
+                  dvValue.toString().substring(0, 50) +
+                  '" nao reconhecido como data',
+              )
+            }
+          }
+        }
+      }
+    }
+    if (dateValidationErrors.length > 0) {
+      return e.badRequestError('Erros de validacao de data:\n' + dateValidationErrors.join('\n'))
+    }
+
     var results = []
 
     for (var ri = 0; ri < parsed.length; ri++) {
@@ -852,27 +930,8 @@ routerAdd(
                 }
               }
               if (field && field.type === 'date') {
-                var serialMatch = typeof value === 'string' ? value.match(/^(\d+(\.\d+)?)$/) : null
-                if (serialMatch) {
-                  var serial = parseFloat(serialMatch[1])
-                  if (serial > 1 && serial < 60000) {
-                    try {
-                      var dateObj = new Date(Math.round((serial - 25569) * 86400 * 1000))
-                      value =
-                        dateObj.getUTCFullYear() +
-                        '-' +
-                        pad2(dateObj.getUTCMonth() + 1) +
-                        '-' +
-                        pad2(dateObj.getUTCDate())
-                    } catch (de) {
-                      value = formatDateValue(value)
-                    }
-                  } else {
-                    value = formatDateValue(value)
-                  }
-                } else {
-                  value = formatDateValue(value)
-                }
+                value = formatDateValue(value)
+                if (value === null) continue
               }
               if (field && field.type === 'number') {
                 var numVal = parseFloat(value.toString().replace(',', '.'))
