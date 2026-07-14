@@ -138,3 +138,77 @@ export function formatDateTime(date: Date) {
 export function formatDate(date: Date) {
   return format(date, 'dd/MM/yyyy')
 }
+
+export const heatmapMonths = ['janeiro', 'fevereiro', 'março', 'abril']
+export const heatmapDataByDay: Record<
+  number,
+  Record<string, { p: number | null; f: number | null; pct: number | null }>
+> = {}
+for (let i = 1; i <= 31; i++) {
+  heatmapDataByDay[i] = {
+    janeiro: { p: null, f: null, pct: null },
+    fevereiro: { p: null, f: null, pct: null },
+    março: { p: null, f: null, pct: null },
+    abril: { p: null, f: null, pct: null },
+  }
+}
+
+const mockHeatmapEntries = [
+  { m: 'janeiro', d: 5, p: 224, f: 124, pct: 55.36 },
+  { m: 'janeiro', d: 6, p: 198, f: 214, pct: 108.08 },
+  { m: 'janeiro', d: 7, p: 173, f: 205, pct: 118.5 },
+  { m: 'janeiro', d: 8, p: 172, f: 181, pct: 105.23 },
+  { m: 'janeiro', d: 9, p: 139, f: 168, pct: 120.86 },
+  { m: 'janeiro', d: 10, p: null, f: 18, pct: null },
+  { m: 'janeiro', d: 12, p: 179, f: 152, pct: 84.92 },
+  { m: 'janeiro', d: 13, p: 146, f: 146, pct: 100.0 },
+  { m: 'janeiro', d: 14, p: 190, f: 174, pct: 91.58 },
+  { m: 'janeiro', d: 15, p: 176, f: 170, pct: 96.59 },
+  { m: 'janeiro', d: 16, p: 126, f: 185, pct: 146.83 },
+
+  { m: 'fevereiro', d: 2, p: 262, f: 147, pct: 56.11 },
+  { m: 'fevereiro', d: 3, p: 233, f: 215, pct: 92.27 },
+  { m: 'fevereiro', d: 4, p: 245, f: 207, pct: 84.49 },
+  { m: 'fevereiro', d: 5, p: 202, f: 233, pct: 115.35 },
+  { m: 'fevereiro', d: 6, p: 146, f: 236, pct: 161.64 },
+  { m: 'fevereiro', d: 7, p: null, f: 67, pct: null },
+  { m: 'fevereiro', d: 9, p: 161, f: 78, pct: 48.45 },
+  { m: 'fevereiro', d: 10, p: 220, f: 186, pct: 84.55 },
+  { m: 'fevereiro', d: 11, p: 219, f: 178, pct: 81.28 },
+  { m: 'fevereiro', d: 12, p: 248, f: 178, pct: 71.77 },
+  { m: 'fevereiro', d: 13, p: 149, f: 187, pct: 125.5 },
+  { m: 'fevereiro', d: 14, p: null, f: 125, pct: null },
+  { m: 'fevereiro', d: 16, p: 16, f: null, pct: null },
+
+  { m: 'março', d: 2, p: 235, f: 85, pct: 36.17 },
+  { m: 'março', d: 3, p: 262, f: 172, pct: 65.65 },
+  { m: 'março', d: 4, p: 260, f: 192, pct: 73.85 },
+  { m: 'março', d: 5, p: 183, f: 224, pct: 122.4 },
+  { m: 'março', d: 6, p: 148, f: 195, pct: 131.76 },
+  { m: 'março', d: 7, p: null, f: 104, pct: null },
+  { m: 'março', d: 8, p: null, f: 134, pct: null },
+  { m: 'março', d: 9, p: 154, f: 65, pct: 42.21 },
+  { m: 'março', d: 10, p: 224, f: 179, pct: 79.91 },
+  { m: 'março', d: 11, p: 180, f: 179, pct: 99.44 },
+  { m: 'março', d: 12, p: 207, f: 212, pct: 102.42 },
+  { m: 'março', d: 13, p: 269, f: 208, pct: 77.32 },
+  { m: 'março', d: 14, p: null, f: 79, pct: null },
+  { m: 'março', d: 16, p: 157, f: 150, pct: 95.54 },
+
+  { m: 'abril', d: 1, p: null, f: 206, pct: null },
+  { m: 'abril', d: 2, p: null, f: 229, pct: null },
+  { m: 'abril', d: 5, p: 17, f: null, pct: null },
+  { m: 'abril', d: 6, p: 207, f: null, pct: null },
+  { m: 'abril', d: 7, p: 225, f: null, pct: null },
+  { m: 'abril', d: 8, p: 238, f: null, pct: null },
+  { m: 'abril', d: 9, p: 204, f: null, pct: null },
+  { m: 'abril', d: 10, p: 260, f: null, pct: null },
+  { m: 'abril', d: 13, p: 158, f: null, pct: null },
+  { m: 'abril', d: 14, p: 220, f: null, pct: null },
+  { m: 'abril', d: 15, p: 228, f: null, pct: null },
+  { m: 'abril', d: 16, p: 294, f: null, pct: null },
+]
+
+mockHeatmapEntries.forEach((entry) => {
+  heatmapDataByDay[entry.d][entry.m] = { p: entry.p, f: entry.f, pct: entry.pct }
+})
