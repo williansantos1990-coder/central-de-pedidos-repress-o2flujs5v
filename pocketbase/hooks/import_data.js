@@ -7,7 +7,32 @@ routerAdd(
 
     var collectionsConfig = [
       { name: 'pedve012', field: 'pedve012', sheet: 'PEDVE012', label: 'PEDVE012' },
-      { name: 'pedve005', field: 'pedve005', sheet: 'PEDVE005', label: 'PEDVE005' },
+      {
+        name: 'pedve005',
+        field: 'pedve005',
+        sheet: 'PEDVE005',
+        label: 'PEDVE005',
+        columnMap: [
+          { col: 0, field: 'pedido' },
+          { col: 1, field: 'emissao' },
+          { col: 3, field: 'cliente' },
+          { col: 5, field: 'status' },
+          { col: 6, field: 'tp_estoque' },
+          { col: 7, field: 'bairro' },
+          { col: 8, field: 'cidade' },
+          { col: 9, field: 'doc_remessa' },
+          { col: 10, field: 'prev_entr' },
+          { col: 11, field: 'rota' },
+          { col: 12, field: 'tp_entrega' },
+          { col: 13, field: 'receb_destino' },
+          { col: 14, field: 'vl_ped_rs' },
+          { col: 15, field: 'vl_ord_rem_rs' },
+          { col: 16, field: 'cubagem_local_estoque' },
+          { col: 17, field: 'volume_local_estoque' },
+          { col: 18, field: 'qtd_itens' },
+          { col: 19, field: 'observacao' },
+        ],
+      },
       {
         name: 'transportadoras',
         field: 'transportadoras',
@@ -223,6 +248,16 @@ routerAdd(
         padrao_exceda: ['padraoexceda', 'padraodoexceda', 'exceda', 'padrao'],
         transportadora: ['transportadora', 'transp', 'carrier'],
         status: ['status', 'stat'],
+        emissao: ['emissao', 'dataemissao', 'dtemissao'],
+        tp_estoque: ['tpestoque', 'tipoestoque'],
+        doc_remessa: ['docremessa', 'documentoremessa', 'remessa'],
+        rota: ['rota', 'route'],
+        tp_entrega: ['tpentrega', 'tipoentrega', 'tipodeentrega', 'tipentrega'],
+        receb_destino: ['recebdestino', 'recebimentodestino'],
+        vl_ped_rs: ['vlpedrs', 'valorpedido', 'vlped'],
+        vl_ord_rem_rs: ['vlordremrs', 'valorordemremessa', 'vlordrem'],
+        qtd_itens: ['qtditens', 'qtditem', 'quantidadeitens'],
+        observacao: ['observacao', 'obs'],
       }
       for (var i = 0; i < fnames.length; i++) {
         var fn = fnames[i]
@@ -933,13 +968,17 @@ routerAdd(
       }
 
       var headerMap = []
-      for (var h = 0; h < headerRow.length; h++) {
-        var header = headerRow[h]
-        if (!header || header.toString().trim() === '') continue
-        var normalized = normalizeHeader(header.toString())
-        var matchedField = matchField(normalized, fieldNames)
-        if (matchedField) {
-          headerMap.push({ col: h, field: matchedField })
+      if (config.columnMap) {
+        headerMap = config.columnMap
+      } else {
+        for (var h = 0; h < headerRow.length; h++) {
+          var header = headerRow[h]
+          if (!header || header.toString().trim() === '') continue
+          var normalized = normalizeHeader(header.toString())
+          var matchedField = matchField(normalized, fieldNames)
+          if (matchedField) {
+            headerMap.push({ col: h, field: matchedField })
+          }
         }
       }
 
