@@ -673,23 +673,37 @@ routerAdd(
 
       var fileBytes
       try {
-        var reader = uploadedFile.open()
-        var allBytes = []
-        var buf = new Uint8Array(8192)
-        while (true) {
-          var n
-          try {
-            n = reader.read(buf)
-          } catch (readErr) {
-            break
-          }
-          if (n <= 0) break
-          for (var bi = 0; bi < n; bi++) allBytes.push(buf[bi])
-        }
+        // filesystem.File from findUploadedFiles already has all content
+        // loaded in memory — there is no .open() method. Use .bytes()
+        // to get the content directly, with a read-loop fallback.
+        var rawBytes = null
         try {
-          reader.close()
-        } catch (ce) {}
-        fileBytes = allBytes
+          rawBytes = uploadedFile.bytes()
+        } catch (be) {}
+
+        if (rawBytes && rawBytes.length > 0) {
+          fileBytes = []
+          for (var bi = 0; bi < rawBytes.length; bi++) {
+            fileBytes.push(rawBytes[bi])
+          }
+        } else {
+          var allBytes = []
+          var buf = new Uint8Array(8192)
+          while (true) {
+            var n
+            try {
+              n = uploadedFile.read(buf)
+            } catch (readErr) {
+              break
+            }
+            if (n === null || n === undefined || n <= 0) break
+            for (var bi = 0; bi < n; bi++) allBytes.push(buf[bi])
+          }
+          try {
+            uploadedFile.close()
+          } catch (ce) {}
+          fileBytes = allBytes
+        }
       } catch (err) {
         return e.badRequestError('Erro ao ler arquivo: ' + config.label)
       }
