@@ -673,7 +673,23 @@ routerAdd(
 
       var fileBytes
       try {
-        fileBytes = uploadedFile.Bytes()
+        var reader = uploadedFile.open()
+        var allBytes = []
+        var buf = new Uint8Array(8192)
+        while (true) {
+          var n
+          try {
+            n = reader.read(buf)
+          } catch (readErr) {
+            break
+          }
+          if (n <= 0) break
+          for (var bi = 0; bi < n; bi++) allBytes.push(buf[bi])
+        }
+        try {
+          reader.close()
+        } catch (ce) {}
+        fileBytes = allBytes
       } catch (err) {
         return e.badRequestError('Erro ao ler arquivo: ' + config.label)
       }
