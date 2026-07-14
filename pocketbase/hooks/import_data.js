@@ -929,17 +929,19 @@ routerAdd(
           var reader = uploadedFile.open()
           if (reader) {
             fileBytes = []
-            var oneBuf = [0]
             var safety = 50000000
+            var chunkBuf = new Uint8Array(8192)
             while (fileBytes.length < safety) {
               var n
               try {
-                n = reader.read(oneBuf)
+                n = reader.read(chunkBuf)
               } catch (re) {
                 break
               }
               if (n === null || n === undefined || n <= 0) break
-              fileBytes.push(oneBuf[0] & 0xff)
+              for (var ci2 = 0; ci2 < n; ci2++) {
+                fileBytes.push(chunkBuf[ci2] & 0xff)
+              }
             }
             try {
               reader.close()
@@ -1056,7 +1058,7 @@ routerAdd(
         pedve005: ['pedido'],
         transportadoras: ['destino'],
       }
-      var required = requiredFieldsMap[collectionName]
+      var required = requiredFieldsMap[config.name]
       if (required) {
         var mappedFields = {}
         for (var hmi = 0; hmi < headerMap.length; hmi++) {
