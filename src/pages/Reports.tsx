@@ -58,7 +58,7 @@ export default function Reports() {
       'Prev. Entrega',
       'Data p/ Separação',
       'Data Segura',
-      'Tp. Entrega',
+      'Tipo de Entrega',
       'Cidade',
       'Prazo Transp.',
       'Status',
@@ -169,7 +169,7 @@ export default function Reports() {
                 <TableHead className="font-semibold text-success bg-success/5 whitespace-nowrap">
                   Data Segura
                 </TableHead>
-                <TableHead className="font-semibold text-slate-700">Tp. Entrega</TableHead>
+                <TableHead className="font-semibold text-slate-700">Tipo de Entrega</TableHead>
                 <TableHead className="font-semibold text-slate-700">Destino</TableHead>
                 <TableHead className="font-semibold text-slate-700 text-center">
                   SLA Transp.
