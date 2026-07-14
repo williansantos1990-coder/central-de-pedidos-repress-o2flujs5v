@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-14T17:30:29.229Z",
+  "generatedAt": "2026-07-14T17:54:33.527Z",
   "collections": [
     {
       "name": "users",
@@ -42,104 +42,6 @@
       "indexes": [
         "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
         "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
-      ]
-    },
-    {
-      "name": "pedve012",
-      "type": "base",
-      "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
-      },
-      "fields": [
-        {
-          "name": "pedido",
-          "type": "text",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "cliente",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "envio_liberacao",
-          "type": "date",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "prev_entr",
-          "type": "date",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "transmitir_nfe",
-          "type": "date",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "tipo_entrega",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "cidade",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "uf",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "prazo_transportadora",
-          "type": "number",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "situacao",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate"]
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        }
-      ],
-      "indexes": [
-        "CREATE INDEX `idx_pedve012_tipo_entrega` ON `pedve012` (tipo_entrega)",
-        "CREATE INDEX `idx_pedve012_envio_liberacao` ON `pedve012` (envio_liberacao)",
-        "CREATE INDEX `idx_pedve012_prev_entr` ON `pedve012` (prev_entr)"
       ]
     },
     {
@@ -287,6 +189,310 @@
         "CREATE INDEX `idx_transportadoras_destino` ON `transportadoras` (destino)",
         "CREATE INDEX `idx_transportadoras_uf` ON `transportadoras` (uf)",
         "CREATE INDEX `idx_transportadoras_transportadora` ON `transportadoras` (transportadora)"
+      ]
+    },
+    {
+      "name": "pedve012",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "pedido",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "situacao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "nota_fiscal",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cod_cliente",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cliente",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "uf",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cidade",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "bairro",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "grupo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tipo_entrega",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "digitado",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ate_envio",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "enviado",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "liberado",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ate_lib",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ate_sep",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "separado",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "conferido",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ate_conf",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ate_nf",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "nf_gerada",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "nfe_transmitida",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ate_nfe",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ate_transito",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "colocado_transito",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ate_entrega",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "marcado_entrega",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "qtd_total",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "nr_itens",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "nr_ends",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cubagem_local_estoque",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "volume_local_estoque",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "emissao",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "prev_entr",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "digitacao",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "envio_liberacao",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "liberacao",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "inicio_sep",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "termino_sep",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "inicio_conf",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "termino_conf",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "gerar_nf",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "transmitir_nfe",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "transito",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "entrega",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_pedve012_pedido ON pedve012 (pedido)",
+        "CREATE INDEX idx_pedve012_situacao ON pedve012 (situacao)",
+        "CREATE INDEX idx_pedve012_tipo_entrega ON pedve012 (tipo_entrega)",
+        "CREATE INDEX idx_pedve012_prev_entr ON pedve012 (prev_entr)",
+        "CREATE INDEX idx_pedve012_envio_liberacao ON pedve012 (envio_liberacao)"
       ]
     }
   ]

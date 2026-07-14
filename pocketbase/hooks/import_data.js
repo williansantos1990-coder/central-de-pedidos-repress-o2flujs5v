@@ -171,29 +171,58 @@ routerAdd(
     function matchField(normalized, fnames) {
       var aliases = {
         pedido: ['pedido', 'ped', 'numero', 'num', 'numped', 'npedido'],
+        emissao: ['emissao', 'dataemissao'],
+        situacao: ['situacao', 'sit'],
+        nota_fiscal: ['notafiscal'],
+        qtd_total: ['qtdtotal', 'qtdtot', 'qttotal'],
+        nr_itens: ['nritens', 'nritem'],
+        nr_ends: ['nrends', 'nrend'],
+        cod_cliente: ['codcliente', 'codclient', 'codigocliente'],
         cliente: ['cliente', 'client', 'nome', 'razao', 'razaosocial', 'nomedocliente'],
-        prev_entr: [
-          'preventr',
-          'prevista',
-          'dataentrada',
-          'previsaoentrada',
-          'preventrada',
-          'previstaentrada',
-        ],
-        tipo_entrega: ['tipoentrega', 'tpentrega', 'tpent', 'tipo', 'tipentrega'],
-        cidade: ['cidade', 'city'],
         uf: ['uf', 'estado', 'state'],
-        envio_liberacao: ['envioliberacao', 'envio', 'liberacao', 'dataliberacao'],
-        transmitir_nfe: ['transmitirnfe', 'nfe', 'transmitir', 'datanfe'],
+        cidade: ['cidade', 'city'],
+        bairro: ['bairro', 'district'],
+        grupo: ['grupo', 'group'],
+        tipo_entrega: ['tipoentrega', 'tpentrega', 'tpent', 'tipodeentrega', 'tipentrega'],
+        prev_entr: ['preventr', 'preventrada', 'prevista', 'dataentrada', 'previsaoentrada'],
+        cubagem_local_estoque: ['cubagemlocalestoque', 'cubagem', 'cubagemlocal'],
+        volume_local_estoque: ['volumelocalestoque', 'volume', 'volumelocal'],
+        digitacao: ['digitacao', 'datadigitacao'],
+        digitado: ['digitado'],
+        envio_liberacao: ['envioliberacao', 'envio', 'enviolib'],
+        ate_envio: ['ateenvio', 'ateenv'],
+        enviado: ['enviado'],
+        liberacao: ['liberacao', 'dataliberacao'],
+        ate_lib: ['atelib'],
+        liberado: ['liberado'],
+        inicio_sep: ['iniciosep', 'inicioseparacao'],
+        termino_sep: ['terminosep', 'terminoseparacao'],
+        ate_sep: ['atesep'],
+        separado: ['separado'],
+        inicio_conf: ['inicioconf', 'inicioconferencia'],
+        termino_conf: ['terminoconf', 'terminoconferencia'],
+        ate_conf: ['ateconf'],
+        conferido: ['conferido'],
+        gerar_nf: ['gerarnf', 'gerarnota'],
+        ate_nf: ['atenf'],
+        nf_gerada: ['nfgerada'],
+        transmitir_nfe: ['transmitirnfe', 'transmitir', 'datanfe'],
+        ate_nfe: ['atenfe'],
+        nfe_transmitida: ['nfetransmitida'],
+        transito: ['transito', 'datatransito'],
+        ate_transito: ['atetransito'],
+        colocado_transito: ['colocadotransito'],
+        entrega: ['entrega', 'dataentrega'],
+        ate_entrega: ['ateentrega'],
+        marcado_entrega: ['marcadoentrega'],
+        destino: ['destino'],
+        modal: ['modal', 'mod'],
         prazo_transportadora: ['prazo'],
         prazo_transp_desc: ['prazotransportadora', 'prazotranspdesc', 'prazotransp'],
         prazo_entrega: ['prazoentrega', 'prazodeentrega'],
         padrao_exceda: ['padraoexceda', 'padraodoexceda', 'exceda', 'padrao'],
         transportadora: ['transportadora', 'transp', 'carrier'],
         status: ['status', 'stat'],
-        situacao: ['situacao', 'sit'],
-        modal: ['modal', 'mod'],
-        destino: ['destino'],
       }
       for (var i = 0; i < fnames.length; i++) {
         var fn = fnames[i]
@@ -220,7 +249,20 @@ routerAdd(
 
     function formatDateValue(val) {
       if (typeof val === 'object' && val !== null && typeof val.getFullYear === 'function') {
-        return val.getFullYear() + '-' + pad2(val.getMonth() + 1) + '-' + pad2(val.getDate())
+        var objDatePart =
+          val.getFullYear() + '-' + pad2(val.getMonth() + 1) + '-' + pad2(val.getDate())
+        if (val.getHours() !== 0 || val.getMinutes() !== 0 || val.getSeconds() !== 0) {
+          return (
+            objDatePart +
+            ' ' +
+            pad2(val.getHours()) +
+            ':' +
+            pad2(val.getMinutes()) +
+            ':' +
+            pad2(val.getSeconds())
+          )
+        }
+        return objDatePart
       }
       if (typeof val !== 'string' || val.length === 0) return null
       var trimmed = val.trim()
@@ -230,14 +272,27 @@ routerAdd(
         var serial = parseFloat(serialMatch[1])
         if (serial > 1 && serial < 60000) {
           try {
-            var serialDateObj = new Date(Math.round((serial - 25569) * 86400 * 1000))
-            return (
+            var serialMs = Math.round((serial - 25569) * 86400 * 1000)
+            var serialDateObj = new Date(serialMs)
+            var serialDatePart =
               serialDateObj.getUTCFullYear() +
               '-' +
               pad2(serialDateObj.getUTCMonth() + 1) +
               '-' +
               pad2(serialDateObj.getUTCDate())
-            )
+            var serialHasTime = serial !== Math.floor(serial)
+            if (serialHasTime) {
+              return (
+                serialDatePart +
+                ' ' +
+                pad2(serialDateObj.getUTCHours()) +
+                ':' +
+                pad2(serialDateObj.getUTCMinutes()) +
+                ':' +
+                pad2(serialDateObj.getUTCSeconds())
+              )
+            }
+            return serialDatePart
           } catch (sde) {}
         }
       }
@@ -246,39 +301,69 @@ routerAdd(
         /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
       )
       if (dmyMatch) {
-        return (
+        var dmyDatePart =
           dmyMatch[3] +
           '-' +
           pad2(parseInt(dmyMatch[2], 10)) +
           '-' +
           pad2(parseInt(dmyMatch[1], 10))
-        )
+        if (dmyMatch[4]) {
+          return (
+            dmyDatePart +
+            ' ' +
+            pad2(parseInt(dmyMatch[4], 10)) +
+            ':' +
+            dmyMatch[5] +
+            (dmyMatch[6] ? ':' + dmyMatch[6] : ':00')
+          )
+        }
+        return dmyDatePart
       }
 
       var ymdMatch = trimmed.match(
         /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
       )
       if (ymdMatch) {
-        return (
+        var ymdDatePart =
           ymdMatch[1] +
           '-' +
           pad2(parseInt(ymdMatch[2], 10)) +
           '-' +
           pad2(parseInt(ymdMatch[3], 10))
-        )
+        if (ymdMatch[4]) {
+          return (
+            ymdDatePart +
+            ' ' +
+            pad2(parseInt(ymdMatch[4], 10)) +
+            ':' +
+            ymdMatch[5] +
+            (ymdMatch[6] ? ':' + ymdMatch[6] : ':00')
+          )
+        }
+        return ymdDatePart
       }
 
       var dmyDashMatch = trimmed.match(
         /^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
       )
       if (dmyDashMatch) {
-        return (
+        var dmyDashDatePart =
           dmyDashMatch[3] +
           '-' +
           pad2(parseInt(dmyDashMatch[2], 10)) +
           '-' +
           pad2(parseInt(dmyDashMatch[1], 10))
-        )
+        if (dmyDashMatch[4]) {
+          return (
+            dmyDashDatePart +
+            ' ' +
+            pad2(parseInt(dmyDashMatch[4], 10)) +
+            ':' +
+            dmyDashMatch[5] +
+            (dmyDashMatch[6] ? ':' + dmyDashMatch[6] : ':00')
+          )
+        }
+        return dmyDashDatePart
       }
 
       return null
