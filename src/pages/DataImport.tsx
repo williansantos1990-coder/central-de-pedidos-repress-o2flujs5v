@@ -16,7 +16,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { importAllData, type ImportAllResult } from '@/services/import'
+import { Progress } from '@/components/ui/progress'
+import { importAllData, type ImportAllResult, type ImportProgress } from '@/services/import'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -25,7 +26,7 @@ interface FileSlot {
   label: string
   description: string
   icon: typeof Package
-  sheet: string | null
+  sheet: string
 }
 
 const FILE_SLOTS: FileSlot[] = [
@@ -62,9 +63,12 @@ export default function DataImport() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ImportAllResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [progress, setProgress] = useState<ImportProgress | null>(null)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const hasAnyFile = Object.values(files).some((f) => f !== null)
+  const progressPct =
+    progress && progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0
 
   const handleFileChange = (key: string, file: File | undefined) => {
     if (!file) return
@@ -75,42 +79,30 @@ export default function DataImport() {
 
   const handleRemoveFile = (key: string) => {
     setFiles((prev) => ({ ...prev, [key]: null }))
-    if (fileInputRefs.current[key]) {
-      fileInputRefs.current[key]!.value = ''
-    }
+    if (fileInputRefs.current[key]) fileInputRefs.current[key]!.value = ''
   }
 
   const handleImport = async () => {
     if (!hasAnyFile) return
-
     setLoading(true)
     setError(null)
     setResult(null)
-
+    setProgress({ phase: 'parsing', collection: '', current: 0, total: 0, message: 'Iniciando...' })
     try {
-      const res = await importAllData(files)
+      const res = await importAllData(files, setProgress)
       setResult(res)
-      if (res.success) {
-        res.results.forEach((r) => {
-          if (r.errors > 0) {
-            toast.warning(
-              `Importação parcial: ${r.inserted} registros na base ${r.label} (${r.errors} erros)`,
-            )
-          } else {
-            toast.success(
-              `Importação concluída: ${r.inserted} registros processados com sucesso na base ${r.label}`,
-            )
-          }
-        })
-      } else {
-        toast.error('Erro ao processar dados')
-      }
+      res.results.forEach((r) => {
+        if (r.errors > 0) toast.warning(`${r.label}: ${r.message}`)
+        else if (r.inserted > 0) toast.success(`${r.label}: ${r.inserted} registros importados`)
+        else toast.info(`${r.label}: ${r.message}`)
+      })
     } catch (err: any) {
       const msg = err?.message || 'Erro ao importar dados.'
       setError(msg)
       toast.error(msg)
     } finally {
       setLoading(false)
+      setProgress(null)
     }
   }
 
@@ -119,9 +111,7 @@ export default function DataImport() {
     setResult(null)
     setError(null)
     Object.keys(fileInputRefs.current).forEach((key) => {
-      if (fileInputRefs.current[key]) {
-        fileInputRefs.current[key]!.value = ''
-      }
+      if (fileInputRefs.current[key]) fileInputRefs.current[key]!.value = ''
     })
   }
 
@@ -134,7 +124,7 @@ export default function DataImport() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Importação de Dados</h1>
           <p className="text-sm text-muted-foreground">
-            Selecione as planilhas para atualizar as coleções
+            Processe planilhas localmente no navegador
           </p>
         </div>
       </div>
@@ -143,7 +133,6 @@ export default function DataImport() {
         {FILE_SLOTS.map((slot) => {
           const selectedFile = files[slot.key]
           const Icon = slot.icon
-
           return (
             <Card
               key={slot.key}
@@ -173,7 +162,6 @@ export default function DataImport() {
                   onChange={(e) => handleFileChange(slot.key, e.target.files?.[0])}
                   className="hidden"
                 />
-
                 {selectedFile ? (
                   <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
                     <FileText className="h-5 w-5 text-primary shrink-0" />
@@ -206,17 +194,33 @@ export default function DataImport() {
                     </span>
                   </button>
                 )}
-
-                {slot.sheet && (
-                  <p className="text-[10px] text-muted-foreground/70 mt-2 text-center">
-                    Aba: <strong>{slot.sheet}</strong>
-                  </p>
-                )}
+                <p className="text-[10px] text-muted-foreground/70 mt-2 text-center">
+                  Aba: <strong>{slot.sheet}</strong>
+                </p>
               </CardContent>
             </Card>
           )
         })}
       </div>
+
+      {loading && progress && (
+        <Card>
+          <CardContent className="pt-6 space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {progress.message}
+              </span>
+              {progress.total > 0 && (
+                <span className="text-muted-foreground">
+                  {progress.current}/{progress.total}
+                </span>
+              )}
+            </div>
+            <Progress value={progressPct} className="h-2" />
+          </CardContent>
+        </Card>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -225,11 +229,21 @@ export default function DataImport() {
         </Alert>
       )}
 
-      {result && result.success && (
-        <Alert className="border-green-500/30 bg-green-500/5">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
+      {result && (
+        <Alert
+          className={
+            result.results.every((r) => r.errors === 0)
+              ? 'border-green-500/30 bg-green-500/5'
+              : 'border-amber-500/30 bg-amber-500/5'
+          }
+        >
+          {result.results.every((r) => r.errors === 0) ? (
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+          ) : (
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+          )}
           <AlertDescription>
-            <span className="font-semibold text-green-700 text-base">Importação Concluída</span>
+            <span className="font-semibold text-base">Importação Concluída</span>
             <div className="mt-3 space-y-1.5">
               {result.results.map((r) => (
                 <div
@@ -237,15 +251,12 @@ export default function DataImport() {
                   className="flex items-center justify-between text-sm bg-white/60 rounded-md px-3 py-1.5"
                 >
                   <span className="font-medium">{r.label}</span>
-                  <span className="text-muted-foreground">
-                    {r.inserted} inseridos / {r.deleted} removidos
-                    {r.errors > 0 && (
-                      <span className="text-destructive ml-1">({r.errors} erros)</span>
-                    )}
+                  <span className={cn('text-muted-foreground', r.errors > 0 && 'text-destructive')}>
+                    {r.message}
                   </span>
                 </div>
               ))}
-            </div>{' '}
+            </div>
           </AlertDescription>
         </Alert>
       )}
@@ -281,29 +292,28 @@ export default function DataImport() {
             </div>
             <ul className="list-disc list-inside space-y-1.5 text-muted-foreground">
               <li>
-                O arquivo <strong>PEDVE012.xlsx</strong> deve conter uma aba chamada{' '}
-                <strong>"PEDVE012"</strong>
+                Os arquivos são <strong>processados no navegador</strong> — nenhum arquivo bruto é
+                enviado ao servidor
               </li>
               <li>
-                O arquivo <strong>PEDVE005.xlsx</strong> deve conter uma aba chamada{' '}
-                <strong>"PEDVE005"</strong>
+                PEDVE012.xlsx deve conter uma aba <strong>"PEDVE012"</strong>
               </li>
               <li>
-                Para <strong>Transportadoras</strong>, o arquivo deve conter uma aba chamada{' '}
-                <strong>"Transportadoras"</strong>
+                PEDVE005.xlsx deve conter uma aba <strong>"PEDVE005"</strong>
               </li>
               <li>
-                Formatos aceitos: <strong>XLSX</strong> e <strong>CSV</strong> (UTF-8)
+                Transportadoras.xlsx deve conter uma aba <strong>"Transportadoras"</strong>
               </li>
               <li>
-                Apenas as coleções com arquivo selecionado serão atualizadas — as demais permanecem
-                intactas
+                Outras abas (ex: "Variáveis") são <strong>ignoradas automaticamente</strong>
               </li>
               <li>
-                Os dados existentes na coleção serão <strong>removidos</strong> antes da importação
-                dos novos
+                Formatatos aceitos: <strong>XLSX</strong> e <strong>CSV</strong> (UTF-8)
               </li>
-              <li>As datas devem estar no formato DD/MM/AAAA ou AAAA-MM-DD</li>
+              <li>
+                Os dados existentes serão <strong>removidos</strong> antes da importação dos novos
+              </li>
+              <li>Datas devem estar no formato DD/MM/AAAA ou AAAA-MM-DD</li>
             </ul>
           </div>
         </CardContent>
