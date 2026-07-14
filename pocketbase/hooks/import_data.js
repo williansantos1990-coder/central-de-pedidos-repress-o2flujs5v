@@ -1,56 +1,48 @@
+// @deps xlsx@0.18.5
 routerAdd(
   'POST',
-  '/backend/v1/import/{collection}',
+  '/backend/v1/import',
   (e) => {
-    const collectionName = e.request.pathValue('collection')
-    const userId = e.auth && e.auth.id
+    const XLSX = require('xlsx')
 
+    const userId = e.auth && e.auth.id
     if (!userId) return e.unauthorizedError('auth required')
 
-    const allowedCollections = ['pedve012', 'pedve005', 'transportadoras']
-    if (allowedCollections.indexOf(collectionName) === -1) {
-      return e.badRequestError('collection not allowed for import')
+    var collectionsConfig = [
+      { name: 'pedve012', field: 'pedve012', sheet: 'PEDVE012', label: 'PEDVE012' },
+      { name: 'pedve005', field: 'pedve005', sheet: 'PEDVE005', label: 'PEDVE005' },
+      { name: 'transportadoras', field: 'transportadoras', sheet: null, label: 'Transportadoras' },
+    ]
+
+    var pendingFiles = []
+    for (var i = 0; i < collectionsConfig.length; i++) {
+      var cfg = collectionsConfig[i]
+      var uploaded = e.findUploadedFiles(cfg.field)
+      if (uploaded && uploaded.length > 0) {
+        pendingFiles.push({ config: cfg, file: uploaded[0] })
+      }
     }
 
-    const uploadedFiles = e.findUploadedFiles('file')
-    if (!uploadedFiles || uploadedFiles.length === 0) {
+    if (pendingFiles.length === 0) {
       return e.badRequestError('Nenhum arquivo enviado')
     }
 
-    let collection
-    try {
-      collection = $app.findCollectionByNameOrId(collectionName)
-    } catch (_) {
-      return e.badRequestError('collection not found')
-    }
-
-    const uploadedFile = uploadedFiles[0]
-    let fileBytes
-    try {
-      fileBytes = uploadedFile.Bytes()
-    } catch (err) {
-      return e.badRequestError('Erro ao ler arquivo')
-    }
-
-    if (!fileBytes || fileBytes.length === 0) {
-      return e.badRequestError('Arquivo vazio')
-    }
-
-    if (fileBytes.length >= 2 && fileBytes[0] === 0x50 && fileBytes[1] === 0x4b) {
-      return e.badRequestError(
-        'Formato XLSX nao suportado. Salve o arquivo como CSV (UTF-8) e tente novamente.',
-      )
+    function bytesToBinary(bytes) {
+      var result = ''
+      for (var i = 0; i < bytes.length; i++) {
+        result += String.fromCharCode(bytes[i])
+      }
+      return result
     }
 
     function bytesToString(bytes) {
-      const hasBom =
-        bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
-      const start = hasBom ? 3 : 0
-      let result = ''
-      let i = start
-      let isValidUtf8 = true
+      var hasBom = bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
+      var start = hasBom ? 3 : 0
+      var result = ''
+      var i = start
+      var isValidUtf8 = true
       while (i < bytes.length) {
-        const b = bytes[i]
+        var b = bytes[i]
         if (b < 0x80) {
           result += String.fromCharCode(b)
           i++
@@ -83,12 +75,12 @@ routerAdd(
             (bytes[i + 2] & 0xc0) === 0x80 &&
             (bytes[i + 3] & 0xc0) === 0x80
           ) {
-            const cp =
+            var cp =
               ((b & 0x07) << 18) |
               ((bytes[i + 1] & 0x3f) << 12) |
               ((bytes[i + 2] & 0x3f) << 6) |
               (bytes[i + 3] & 0x3f)
-            const adj = cp - 0x10000
+            var adj = cp - 0x10000
             result += String.fromCharCode(0xd800 + (adj >> 10), 0xdc00 + (adj & 0x3ff))
             i += 4
           } else {
@@ -102,7 +94,7 @@ routerAdd(
       }
       if (!isValidUtf8) {
         result = ''
-        for (let j = start; j < bytes.length; j++) {
+        for (var j = start; j < bytes.length; j++) {
           result += String.fromCharCode(bytes[j])
         }
       }
@@ -110,13 +102,13 @@ routerAdd(
     }
 
     function parseCSV(text, delimiter) {
-      const rows = []
-      let row = []
-      let field = ''
-      let inQuotes = false
-      let i = 0
+      var rows = []
+      var row = []
+      var field = ''
+      var inQuotes = false
+      var i = 0
       while (i < text.length) {
-        const ch = text[i]
+        var ch = text[i]
         if (inQuotes) {
           if (ch === '"') {
             if (i + 1 < text.length && text[i + 1] === '"') {
@@ -160,11 +152,11 @@ routerAdd(
     }
 
     function removeAccents(str) {
-      const accents = 'àáâãäåèéêëìíîïòóôõöùúûüçñÀÁÂÃÄÅÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÇÑ'
-      const without = 'aaaaaeeeeiiiiooooouuuucnAAAAAEEEEIIIIOOOOOUUUUCN'
-      let result = ''
-      for (let k = 0; k < str.length; k++) {
-        const idx = accents.indexOf(str[k])
+      var accents = 'àáâãäåèéêëìíîïòóôõöùúûüçñÀÁÂÃÄÅÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÇÑ'
+      var without = 'aaaaaeeeeiiiiooooouuuucnAAAAAEEEEIIIIOOOOOUUUUCN'
+      var result = ''
+      for (var k = 0; k < str.length; k++) {
+        var idx = accents.indexOf(str[k])
         result += idx >= 0 ? without[idx] : str[k]
       }
       return result
@@ -175,15 +167,15 @@ routerAdd(
     }
 
     function matchField(normalized, fnames) {
-      for (let i = 0; i < fnames.length; i++) {
-        const fn = fnames[i]
-        const fnNorm = fn
+      for (var i = 0; i < fnames.length; i++) {
+        var fn = fnames[i]
+        var fnNorm = fn
           .toLowerCase()
           .replace(/_/g, '')
           .replace(/[^a-z0-9]/g, '')
         if (fnNorm === normalized) return fn
       }
-      const aliases = {
+      var aliases = {
         pedido: ['pedido', 'ped', 'numero', 'num', 'numped', 'npedido'],
         cliente: ['cliente', 'client', 'nome', 'razao', 'razaosocial', 'nomedocliente'],
         prev_entr: [
@@ -205,11 +197,11 @@ routerAdd(
         modal: ['modal', 'mod'],
         destino: ['destino', 'cidade', 'city'],
       }
-      for (let i = 0; i < fnames.length; i++) {
-        const fn = fnames[i]
-        const aliasList = aliases[fn]
+      for (var i = 0; i < fnames.length; i++) {
+        var fn = fnames[i]
+        var aliasList = aliases[fn]
         if (!aliasList) continue
-        for (let j = 0; j < aliasList.length; j++) {
+        for (var j = 0; j < aliasList.length; j++) {
           if (aliasList[j] === normalized) return fn
         }
       }
@@ -225,7 +217,7 @@ routerAdd(
         return val.getFullYear() + '-' + pad2(val.getMonth() + 1) + '-' + pad2(val.getDate())
       }
       if (typeof val === 'string' && val.length > 0) {
-        const dmyMatch = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+        var dmyMatch = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
         if (dmyMatch) {
           return (
             dmyMatch[3] +
@@ -235,7 +227,7 @@ routerAdd(
             pad2(parseInt(dmyMatch[1], 10))
           )
         }
-        const ymdMatch = val.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+        var ymdMatch = val.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
         if (ymdMatch) {
           return (
             ymdMatch[1] +
@@ -249,147 +241,251 @@ routerAdd(
       return val
     }
 
-    let text = bytesToString(fileBytes)
-    if (text.charCodeAt(0) === 0xfeff) {
-      text = text.substring(1)
-    }
+    var parsed = []
 
-    const firstLine = text.split('\n')[0]
-    let delimiter = ','
-    if (firstLine.indexOf(';') >= 0) delimiter = ';'
-    else if (firstLine.indexOf('\t') >= 0) delimiter = '\t'
+    for (var pi = 0; pi < pendingFiles.length; pi++) {
+      var item = pendingFiles[pi]
+      var config = item.config
+      var uploadedFile = item.file
 
-    const rows = parseCSV(text, delimiter)
-
-    if (!rows || rows.length < 2) {
-      return e.json(200, {
-        success: true,
-        collection: collectionName,
-        deleted: 0,
-        inserted: 0,
-        message: 'Nenhum dado encontrado no arquivo',
-      })
-    }
-
-    const headerRow = rows[0]
-    const dataRows = rows.slice(1)
-
-    const filteredRows = []
-    for (let r = 0; r < dataRows.length; r++) {
-      let isEmpty = true
-      for (let c = 0; c < dataRows[r].length; c++) {
-        if (
-          dataRows[r][c] !== null &&
-          dataRows[r][c] !== undefined &&
-          dataRows[r][c].toString().trim() !== ''
-        ) {
-          isEmpty = false
-          break
-        }
-      }
-      if (!isEmpty) filteredRows.push(dataRows[r])
-    }
-
-    if (filteredRows.length === 0) {
-      return e.json(200, {
-        success: true,
-        collection: collectionName,
-        deleted: 0,
-        inserted: 0,
-        message: 'Nenhum dado encontrado no arquivo',
-      })
-    }
-
-    const fieldNames = []
-    const fields = collection.fields
-    for (let i = 0; i < fields.length; i++) {
-      fieldNames.push(fields[i].name)
-    }
-
-    const headerMap = []
-    for (let i = 0; i < headerRow.length; i++) {
-      const header = headerRow[i]
-      if (!header || header.trim() === '') continue
-      const normalized = normalizeHeader(header)
-      const matchedField = matchField(normalized, fieldNames)
-      if (matchedField) {
-        headerMap.push({ col: i, field: matchedField })
-      }
-    }
-
-    if (headerMap.length === 0) {
-      return e.badRequestError('Nenhum cabecalho reconhecido no arquivo CSV')
-    }
-
-    let deletedCount = 0
-    try {
-      deletedCount = $app.countRecords(collectionName)
-    } catch (_) {}
-
-    try {
-      $app.truncateCollection(collection)
-    } catch (_) {
-      while (true) {
-        let records
-        try {
-          records = $app.findRecordsByFilter(collectionName, "id != ''", '', 500, 0)
-        } catch (_) {
-          break
-        }
-        if (!records || records.length === 0) break
-        for (let i = 0; i < records.length; i++) {
-          try {
-            $app.delete(records[i])
-          } catch (_) {}
-        }
-      }
-    }
-
-    let insertedCount = 0
-    let errorCount = 0
-    for (let i = 0; i < filteredRows.length; i++) {
+      var fileBytes
       try {
-        const record = new Record(collection)
-        const row = filteredRows[i]
-        for (let h = 0; h < headerMap.length; h++) {
-          const colIdx = headerMap[h].col
-          const fieldName = headerMap[h].field
-          if (fieldName === 'id' || fieldName === 'created' || fieldName === 'updated') continue
-          let value = row[colIdx]
-          if (value !== undefined && value !== null && value !== '') {
-            let field = null
-            for (let fi = 0; fi < fields.length; fi++) {
-              if (fields[fi].name === fieldName) {
-                field = fields[fi]
+        fileBytes = uploadedFile.Bytes()
+      } catch (err) {
+        return e.badRequestError('Erro ao ler arquivo: ' + config.label)
+      }
+
+      if (!fileBytes || fileBytes.length === 0) {
+        return e.badRequestError('Arquivo vazio: ' + config.label)
+      }
+
+      var isXlsx = fileBytes.length >= 2 && fileBytes[0] === 0x50 && fileBytes[1] === 0x4b
+
+      var headerRow = null
+      var dataRows = null
+
+      if (isXlsx) {
+        var binary = bytesToBinary(fileBytes)
+        var wb
+        try {
+          wb = XLSX.read(binary, { type: 'binary' })
+        } catch (err) {
+          return e.badRequestError(
+            'Erro ao ler arquivo XLSX: ' + config.label + ' - ' + (err.message || ''),
+          )
+        }
+
+        var sheetName = config.sheet
+        var sheet = null
+
+        if (sheetName) {
+          sheet = wb.Sheets[sheetName]
+          if (!sheet) {
+            for (var si = 0; si < wb.SheetNames.length; si++) {
+              if (wb.SheetNames[si].toUpperCase() === sheetName.toUpperCase()) {
+                sheet = wb.Sheets[wb.SheetNames[si]]
                 break
               }
             }
-            if (field && field.type === 'date') {
-              value = formatDateValue(value)
-            }
-            if (field && field.type === 'number') {
-              const numVal = parseFloat(value.toString().replace(',', '.'))
-              value = isNaN(numVal) ? 0 : numVal
-            }
-            record.set(fieldName, value)
+          }
+          if (!sheet) {
+            return e.badRequestError(
+              'Planilha "' +
+                config.sheet +
+                '" nao encontrada no arquivo ' +
+                config.label +
+                '. Abas disponiveis: ' +
+                wb.SheetNames.join(', '),
+            )
+          }
+        } else {
+          if (!wb.SheetNames || wb.SheetNames.length === 0) {
+            return e.badRequestError('Nenhuma aba encontrada no arquivo ' + config.label)
+          }
+          sheetName = wb.SheetNames[0]
+          sheet = wb.Sheets[sheetName]
+        }
+
+        var xlsxRows
+        try {
+          xlsxRows = XLSX.utils.sheet_to_json(sheet, {
+            header: 1,
+            raw: false,
+            defval: '',
+          })
+        } catch (err) {
+          return e.badRequestError('Erro ao processar aba "' + sheetName + '": ' + config.label)
+        }
+
+        if (!xlsxRows || xlsxRows.length < 2) {
+          return e.badRequestError(
+            'Nenhum dado encontrado na aba "' + sheetName + '" do arquivo ' + config.label,
+          )
+        }
+
+        headerRow = xlsxRows[0]
+        dataRows = xlsxRows.slice(1)
+      } else {
+        var text = bytesToString(fileBytes)
+        if (text.charCodeAt(0) === 0xfeff) {
+          text = text.substring(1)
+        }
+
+        var firstLine = text.split('\n')[0]
+        var delimiter = ','
+        if (firstLine.indexOf(';') >= 0) delimiter = ';'
+        else if (firstLine.indexOf('\t') >= 0) delimiter = '\t'
+
+        var csvRows = parseCSV(text, delimiter)
+
+        if (!csvRows || csvRows.length < 2) {
+          return e.badRequestError('Nenhum dado encontrado no arquivo ' + config.label)
+        }
+
+        headerRow = csvRows[0]
+        dataRows = csvRows.slice(1)
+      }
+
+      var filteredRows = []
+      for (var r = 0; r < dataRows.length; r++) {
+        var isEmpty = true
+        for (var c = 0; c < dataRows[r].length; c++) {
+          if (
+            dataRows[r][c] !== null &&
+            dataRows[r][c] !== undefined &&
+            dataRows[r][c].toString().trim() !== ''
+          ) {
+            isEmpty = false
+            break
           }
         }
-        $app.save(record)
-        insertedCount++
-      } catch (err) {
-        errorCount++
+        if (!isEmpty) filteredRows.push(dataRows[r])
       }
+
+      if (filteredRows.length === 0) {
+        return e.badRequestError('Nenhum dado valido encontrado no arquivo ' + config.label)
+      }
+
+      var collection
+      try {
+        collection = $app.findCollectionByNameOrId(config.name)
+      } catch (_) {
+        return e.badRequestError('Colecao nao encontrada: ' + config.name)
+      }
+
+      var fieldNames = []
+      var fields = collection.fields
+      for (var fi = 0; fi < fields.length; fi++) {
+        fieldNames.push(fields[fi].name)
+      }
+
+      var headerMap = []
+      for (var h = 0; h < headerRow.length; h++) {
+        var header = headerRow[h]
+        if (!header || header.toString().trim() === '') continue
+        var normalized = normalizeHeader(header.toString())
+        var matchedField = matchField(normalized, fieldNames)
+        if (matchedField) {
+          headerMap.push({ col: h, field: matchedField })
+        }
+      }
+
+      if (headerMap.length === 0) {
+        return e.badRequestError('Nenhum cabecalho reconhecido no arquivo ' + config.label)
+      }
+
+      parsed.push({
+        config: config,
+        collection: collection,
+        fields: fields,
+        headerMap: headerMap,
+        filteredRows: filteredRows,
+      })
+    }
+
+    var results = []
+
+    for (var ri = 0; ri < parsed.length; ri++) {
+      var p = parsed[ri]
+      var collectionName = p.config.name
+
+      var deletedCount = 0
+      try {
+        deletedCount = $app.countRecords(collectionName)
+      } catch (_) {}
+
+      try {
+        $app.truncateCollection(p.collection)
+      } catch (_) {
+        while (true) {
+          var records
+          try {
+            records = $app.findRecordsByFilter(collectionName, "id != ''", '', 500, 0)
+          } catch (_) {
+            break
+          }
+          if (!records || records.length === 0) break
+          for (var di = 0; di < records.length; di++) {
+            try {
+              $app.delete(records[di])
+            } catch (_) {}
+          }
+        }
+      }
+
+      var insertedCount = 0
+      var errorCount = 0
+      for (var ins = 0; ins < p.filteredRows.length; ins++) {
+        try {
+          var record = new Record(p.collection)
+          var row = p.filteredRows[ins]
+          for (var hm = 0; hm < p.headerMap.length; hm++) {
+            var colIdx = p.headerMap[hm].col
+            var fieldName = p.headerMap[hm].field
+            if (fieldName === 'id' || fieldName === 'created' || fieldName === 'updated') continue
+            var value = row[colIdx]
+            if (value !== undefined && value !== null && value !== '') {
+              var field = null
+              for (var ffi = 0; ffi < p.fields.length; ffi++) {
+                if (p.fields[ffi].name === fieldName) {
+                  field = p.fields[ffi]
+                  break
+                }
+              }
+              if (field && field.type === 'date') {
+                value = formatDateValue(value)
+              }
+              if (field && field.type === 'number') {
+                var numVal = parseFloat(value.toString().replace(',', '.'))
+                value = isNaN(numVal) ? 0 : numVal
+              }
+              record.set(fieldName, value)
+            }
+          }
+          $app.save(record)
+          insertedCount++
+        } catch (err) {
+          errorCount++
+        }
+      }
+
+      results.push({
+        collection: collectionName,
+        label: p.config.label,
+        deleted: deletedCount,
+        inserted: insertedCount,
+        errors: errorCount,
+        message:
+          errorCount > 0
+            ? insertedCount + ' registros importados, ' + errorCount + ' erros'
+            : insertedCount + ' registros importados com sucesso',
+      })
     }
 
     return e.json(200, {
       success: true,
-      collection: collectionName,
-      deleted: deletedCount,
-      inserted: insertedCount,
-      message:
-        errorCount > 0
-          ? insertedCount + ' registros importados, ' + errorCount + ' erros'
-          : insertedCount + ' registros importados com sucesso',
+      results: results,
+      message: 'Finalizado!',
     })
   },
   $apis.requireAuth(),

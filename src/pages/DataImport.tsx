@@ -1,77 +1,99 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, FileText, AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react'
+import {
+  Upload,
+  FileText,
+  AlertCircle,
+  CheckCircle2,
+  ArrowLeft,
+  Loader2,
+  Package,
+  FileSpreadsheet,
+  Truck,
+  X,
+  Info,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { importData, type ImportResult } from '@/services/import'
+import { importAllData, type ImportAllResult } from '@/services/import'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
-const COLLECTIONS = [
-  { value: 'pedve012', label: 'Pedidos (PEDVE012)' },
-  { value: 'pedve005', label: 'Previsão de Entrada (PEDVE005)' },
-  { value: 'transportadoras', label: 'Transportadoras' },
+interface FileSlot {
+  key: 'pedve012' | 'pedve005' | 'transportadoras'
+  label: string
+  description: string
+  icon: typeof Package
+  sheet: string | null
+}
+
+const FILE_SLOTS: FileSlot[] = [
+  {
+    key: 'pedve012',
+    label: 'PEDVE012',
+    description: 'Pedidos de venda',
+    icon: Package,
+    sheet: 'PEDVE012',
+  },
+  {
+    key: 'pedve005',
+    label: 'PEDVE005',
+    description: 'Previsão de entrada',
+    icon: FileSpreadsheet,
+    sheet: 'PEDVE005',
+  },
+  {
+    key: 'transportadoras',
+    label: 'Transportadoras',
+    description: 'Prazos e modais',
+    icon: Truck,
+    sheet: null,
+  },
 ]
 
 export default function DataImport() {
   const navigate = useNavigate()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [selectedCollection, setSelectedCollection] = useState<string>('')
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<Record<string, File | null>>({
+    pedve012: null,
+    pedve005: null,
+    transportadoras: null,
+  })
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<ImportResult | null>(null)
+  const [result, setResult] = useState<ImportAllResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const hasAnyFile = Object.values(files).some((f) => f !== null)
+
+  const handleFileChange = (key: string, file: File | undefined) => {
     if (!file) return
-
-    const fileName = file.name.toLowerCase()
-    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-      setError('Formato XLSX não suportado. Salve o arquivo como CSV (UTF-8) e tente novamente.')
-      setSelectedFile(null)
-      return
-    }
-
-    if (!fileName.endsWith('.csv')) {
-      setError('Apenas arquivos CSV são suportados.')
-      setSelectedFile(null)
-      return
-    }
-
     setError(null)
-    setSelectedFile(file)
     setResult(null)
+    setFiles((prev) => ({ ...prev, [key]: file }))
+  }
+
+  const handleRemoveFile = (key: string) => {
+    setFiles((prev) => ({ ...prev, [key]: null }))
+    if (fileInputRefs.current[key]) {
+      fileInputRefs.current[key]!.value = ''
+    }
   }
 
   const handleImport = async () => {
-    if (!selectedCollection) {
-      setError('Selecione uma coleção para importar.')
-      return
-    }
-    if (!selectedFile) {
-      setError('Selecione um arquivo CSV.')
-      return
-    }
+    if (!hasAnyFile) return
 
     setLoading(true)
     setError(null)
     setResult(null)
 
     try {
-      const res = await importData(selectedCollection, selectedFile)
+      const res = await importAllData(files)
       setResult(res)
       if (res.success) {
-        toast.success(res.message)
+        toast.success('Finalizado!')
       } else {
-        toast.error(res.message)
+        toast.error('Erro ao processar dados')
       }
     } catch (err: any) {
       const msg = err?.message || 'Erro ao importar dados.'
@@ -83,141 +105,193 @@ export default function DataImport() {
   }
 
   const handleReset = () => {
-    setSelectedFile(null)
+    setFiles({ pedve012: null, pedve005: null, transportadoras: null })
     setResult(null)
     setError(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    Object.keys(fileInputRefs.current).forEach((key) => {
+      if (fileInputRefs.current[key]) {
+        fileInputRefs.current[key]!.value = ''
+      }
+    })
   }
 
   return (
-    <div className="container mx-auto max-w-2xl p-4 space-y-6">
+    <div className="container mx-auto max-w-5xl p-4 space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Importação de Dados</h1>
-          <p className="text-sm text-muted-foreground">Importe dados a partir de arquivos CSV</p>
+          <p className="text-sm text-muted-foreground">
+            Selecione as planilhas para atualizar as coleções
+          </p>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Importar CSV
-          </CardTitle>
-          <CardDescription>
-            Selecione a coleção de destino e o arquivo CSV. Os dados existentes serão substituídos.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Coleção</label>
-            <Select value={selectedCollection} onValueChange={setSelectedCollection}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma coleção" />
-              </SelectTrigger>
-              <SelectContent>
-                {COLLECTIONS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {FILE_SLOTS.map((slot) => {
+          const selectedFile = files[slot.key]
+          const Icon = slot.icon
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Arquivo CSV</label>
-            <div
-              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,text/csv"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              {selectedFile ? (
-                <div className="flex flex-col items-center gap-2">
-                  <FileText className="h-8 w-8 text-primary" />
-                  <span className="text-sm font-medium">{selectedFile.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {(selectedFile.size / 1024).toFixed(1)} KB
-                  </span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    Clique para selecionar um arquivo CSV
-                  </span>
-                </div>
+          return (
+            <Card
+              key={slot.key}
+              className={cn(
+                'transition-all duration-200',
+                selectedFile && 'ring-2 ring-primary/40',
               )}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">{slot.label}</CardTitle>
+                    <CardDescription className="text-xs">{slot.description}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <input
+                  ref={(el) => {
+                    fileInputRefs.current[slot.key] = el
+                  }}
+                  type="file"
+                  accept=".xlsx,.csv"
+                  onChange={(e) => handleFileChange(slot.key, e.target.files?.[0])}
+                  className="hidden"
+                />
+
+                {selectedFile ? (
+                  <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <FileText className="h-5 w-5 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(selectedFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => handleRemoveFile(slot.key)}
+                      disabled={loading}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    className="w-full border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 group"
+                    onClick={() => fileInputRefs.current[slot.key]?.click()}
+                    disabled={loading}
+                  >
+                    <Upload className="h-7 w-7 text-muted-foreground mx-auto mb-2 group-hover:text-primary transition-colors" />
+                    <span className="text-xs text-muted-foreground block">Selecionar arquivo</span>
+                    <span className="text-[10px] text-muted-foreground/60 block mt-1">
+                      .xlsx ou .csv
+                    </span>
+                  </button>
+                )}
+
+                {slot.sheet && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-2 text-center">
+                    Aba: <strong>{slot.sheet}</strong>
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {result && result.success && (
+        <Alert className="border-green-500/30 bg-green-500/5">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription>
+            <span className="font-semibold text-green-700 text-base">Finalizado!</span>
+            <div className="mt-3 space-y-1.5">
+              {result.results.map((r) => (
+                <div
+                  key={r.collection}
+                  className="flex items-center justify-between text-sm bg-white/60 rounded-md px-3 py-1.5"
+                >
+                  <span className="font-medium">{r.label}</span>
+                  <span className="text-muted-foreground">
+                    {r.inserted} inseridos / {r.deleted} removidos
+                    {r.errors > 0 && (
+                      <span className="text-destructive ml-1">({r.errors} erros)</span>
+                    )}
+                  </span>
+                </div>
+              ))}
             </div>
-          </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+      <div className="flex gap-2">
+        <Button
+          onClick={handleImport}
+          disabled={loading || !hasAnyFile}
+          className="flex-1 h-11 text-base"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Processando...
+            </>
+          ) : (
+            'Processar'
           )}
-
-          {result && (
-            <Alert>
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>
-                <span className="font-medium">{result.message}</span>
-                <br />
-                <span className="text-xs text-muted-foreground">
-                  Registros removidos: {result.deleted} | Registros inseridos: {result.inserted}
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              onClick={handleImport}
-              disabled={loading || !selectedCollection || !selectedFile}
-              className="flex-1"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importando...
-                </>
-              ) : (
-                'Importar'
-              )}
-            </Button>
-            {(selectedFile || result) && (
-              <Button variant="outline" onClick={handleReset} disabled={loading}>
-                Limpar
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        </Button>
+        {hasAnyFile && !loading && (
+          <Button variant="outline" onClick={handleReset} className="h-11">
+            Limpar
+          </Button>
+        )}
+      </div>
 
       <Card>
         <CardContent className="pt-6">
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Instruções:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>O arquivo deve estar no formato CSV codificado em UTF-8</li>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center gap-2 font-medium text-foreground">
+              <Info className="h-4 w-4 text-primary" />
+              Instruções
+            </div>
+            <ul className="list-disc list-inside space-y-1.5 text-muted-foreground">
               <li>
-                No Excel, use "Salvar como" e selecione o formato "CSV UTF-8 (Separado por
-                vírgulas)"
+                O arquivo <strong>PEDVE012.xlsx</strong> deve conter uma aba chamada{' '}
+                <strong>"PEDVE012"</strong>
               </li>
-              <li>A primeira linha deve conter os cabeçalhos das colunas</li>
-              <li>Os dados existentes na coleção serão removidos antes da importação</li>
+              <li>
+                O arquivo <strong>PEDVE005.xlsx</strong> deve conter uma aba chamada{' '}
+                <strong>"PEDVE005"</strong>
+              </li>
+              <li>
+                Para <strong>Transportadoras</strong>, a primeira aba será utilizada
+              </li>
+              <li>
+                Formatos aceitos: <strong>XLSX</strong> e <strong>CSV</strong> (UTF-8)
+              </li>
+              <li>
+                Apenas as coleções com arquivo selecionado serão atualizadas — as demais permanecem
+                intactas
+              </li>
+              <li>
+                Os dados existentes na coleção serão <strong>removidos</strong> antes da importação
+                dos novos
+              </li>
               <li>As datas devem estar no formato DD/MM/AAAA ou AAAA-MM-DD</li>
             </ul>
           </div>
