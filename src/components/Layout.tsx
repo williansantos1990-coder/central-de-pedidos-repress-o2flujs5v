@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/hooks/use-auth'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -28,6 +29,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, signOut } = useAuth()
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -155,19 +158,19 @@ export default function Layout() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                  <img
-                    src="https://img.usecurling.com/ppl/thumbnail?gender=male&seed=3"
-                    alt="User"
-                    className="rounded-full object-cover border border-slate-200"
-                  />
+                  <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-sm font-semibold text-primary">
+                      {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                    </span>
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Carlos Gerente</p>
+                    <p className="text-sm font-medium leading-none">{user?.name || 'Usuário'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      carlos@logistica.com
+                      {user?.email || ''}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -181,7 +184,13 @@ export default function Layout() {
                   <span>Forçar Sincronização</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => {
+                    signOut()
+                    navigate('/login')
+                  }}
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sair</span>
                 </DropdownMenuItem>

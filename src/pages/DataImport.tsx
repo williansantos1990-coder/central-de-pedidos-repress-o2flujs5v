@@ -1,41 +1,61 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { UploadCloud, FileSpreadsheet, Database, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { UploadCloud, FileSpreadsheet, CheckCircle2, Loader2, X, Database } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { importExcelData, readFileAsBase64 } from '@/services/import'
+import { cn } from '@/lib/utils'
 
-interface FileSlotProps {
+interface ImportSlot {
+  collection: string
   title: string
   description: string
   expectedColumns: string[]
-  status: 'empty' | 'uploaded'
+  file: File | null
 }
 
-function FileSlot({ title, description, expectedColumns, status }: FileSlotProps) {
+function FileUploadCard({
+  slot,
+  onFileSelect,
+}: {
+  slot: ImportSlot
+  onFileSelect: (file: File | null) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
   return (
-    <Card className="border-slate-200 shadow-sm relative overflow-hidden group">
+    <Card
+      className={cn(
+        'border-slate-200 shadow-sm relative overflow-hidden group transition-all',
+        slot.file && 'border-primary/40 ring-1 ring-primary/20',
+      )}
+    >
       <div
-        className={`absolute top-0 left-0 w-1 h-full ${status === 'uploaded' ? 'bg-success' : 'bg-slate-300 group-hover:bg-primary/50 transition-colors'}`}
-      ></div>
+        className={cn(
+          'absolute top-0 left-0 w-1 h-full transition-colors',
+          slot.file ? 'bg-primary' : 'bg-slate-300 group-hover:bg-primary/50',
+        )}
+      />
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5 text-slate-500" />
-              {title}
+              {slot.title}
             </CardTitle>
-            <CardDescription className="text-xs mt-1">{description}</CardDescription>
+            <CardDescription className="text-xs mt-1">{slot.description}</CardDescription>
           </div>
-          {status === 'uploaded' && <CheckCircle2 className="w-5 h-5 text-success" />}
+          {slot.file && <CheckCircle2 className="w-5 h-5 text-success" />}
         </div>
       </CardHeader>
       <CardContent>
         <div className="mb-4">
           <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-            Colunas Esperadas (Exemplo)
+            Colunas Esperadas
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {expectedColumns.map((col) => (
+            {slot.expectedColumns.map((col) => (
               <span
                 key={col}
                 className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200"
@@ -45,83 +65,162 @@ function FileSlot({ title, description, expectedColumns, status }: FileSlotProps
             ))}
           </div>
         </div>
-        <Button
-          variant={status === 'uploaded' ? 'outline' : 'default'}
-          className="w-full relative border-dashed"
-          disabled // Disabled to enforce the database import rule
-        >
-          <UploadCloud className="w-4 h-4 mr-2" />
-          {status === 'uploaded' ? 'Substituir Arquivo' : 'Selecionar Arquivo .xlsx'}
-        </Button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={(e) => onFileSelect(e.target.files?.[0] || null)}
+          className="hidden"
+        />
+        {slot.file ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between bg-primary/5 rounded-lg px-3 py-2 border border-primary/20">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileSpreadsheet className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-sm text-slate-700 truncate">{slot.file.name}</span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onFileSelect(null)
+                  if (inputRef.current) inputRef.current.value = ''
+                }}
+                className="text-slate-400 hover:text-destructive transition-colors shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <Button variant="outline" className="w-full" onClick={() => inputRef.current?.click()}>
+              <UploadCloud className="w-4 h-4 mr-2" />
+              Substituir Arquivo
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="default"
+            className="w-full relative border-dashed"
+            onClick={() => inputRef.current?.click()}
+          >
+            <UploadCloud className="w-4 h-4 mr-2" />
+            Selecionar Arquivo .xlsx
+          </Button>
+        )}
       </CardContent>
     </Card>
   )
 }
 
 export default function DataImport() {
+  const [slots, setSlots] = useState<ImportSlot[]>([
+    {
+      collection: 'pedve005',
+      title: 'PEDVE005',
+      description: 'Dados de emissão e prazos originais.',
+      expectedColumns: ['Pedido', 'Cliente', 'Prev.Entr', 'Tp. Entrega'],
+      file: null,
+    },
+    {
+      collection: 'pedve012',
+      title: 'PEDVE012',
+      description: 'Etapas detalhadas e status atual do pedido.',
+      expectedColumns: ['Pedido', 'Envio Liberação', 'Status', 'Situação'],
+      file: null,
+    },
+    {
+      collection: 'transportadoras',
+      title: 'Transportadoras',
+      description: 'Prazos (SLA) baseados em Cidade/Estado.',
+      expectedColumns: ['DESTINO', 'UF', 'PRAZO TRANSPORTADORA', 'MODAL'],
+      file: null,
+    },
+  ])
+  const [processing, setProcessing] = useState(false)
+  const [completed, setCompleted] = useState(false)
+
+  const handleFileSelect = (collection: string, file: File | null) => {
+    setSlots((prev) => prev.map((s) => (s.collection === collection ? { ...s, file } : s)))
+    setCompleted(false)
+  }
+
+  const hasSelectedFiles = slots.some((s) => s.file !== null)
+
+  const handleProcess = async () => {
+    const selected = slots.filter((s) => s.file !== null)
+    if (selected.length === 0) return
+
+    setProcessing(true)
+    setCompleted(false)
+
+    try {
+      for (const slot of selected) {
+        const base64 = await readFileAsBase64(slot.file!)
+        await importExcelData(slot.collection, base64)
+      }
+      setCompleted(true)
+      toast.success('Finalizado!', {
+        description: 'Importação concluída com sucesso.',
+      })
+      setSlots((prev) => prev.map((s) => ({ ...s, file: null })))
+    } catch (error) {
+      toast.error('Erro na importação', {
+        description:
+          error instanceof Error ? error.message : 'Ocorreu um erro durante a importação.',
+      })
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Gestão de Dados</h2>
         <p className="text-slate-500 text-sm mt-1">
-          Gerencie as fontes de dados que alimentam a Central de Pedidos.
+          Importe arquivos Excel (.xlsx) para atualizar as coleções do banco de dados.
         </p>
       </div>
 
-      <Alert className="bg-primary/5 border-primary/20 text-primary">
+      <Alert className="bg-primary/5 border-primary/20">
         <Database className="h-5 w-5 !text-primary" />
-        <AlertTitle className="font-bold">Atenção Crítica: Banco de Dados Necessário</AlertTitle>
+        <AlertTitle className="font-bold">Importação de Dados</AlertTitle>
         <AlertDescription className="text-sm mt-2 leading-relaxed">
-          Para garantir a performance e as funcionalidades em tempo real desta aplicação,{' '}
-          <strong>
-            é estritamente proibido incorporar dados massivos de planilhas (.xlsx/.csv) diretamente
-            no código-fonte.
-          </strong>
-          <br />
-          <br />
-          Para utilizar seus dados reais (PEDVE005, PEDVE012 e Transportadoras), você deve
-          conectá-los ao banco de dados utilizando a integração de Backend (ícone de servidor no
-          header do painel principal). A aplicação lerá as tabelas diretamente de lá em tempo de
-          execução.
+          Selecione um ou mais arquivos .xlsx para importar. Apenas as coleções com arquivo
+          selecionado serão atualizadas — os dados das demais permanecem intactos.
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <FileSlot
-          title="PEDVE005"
-          description="Dados de emissão e prazos originais."
-          expectedColumns={['Pedido', 'Cliente', 'Prev.Entr', 'Tp. Entrega']}
-          status="empty"
-        />
-        <FileSlot
-          title="PEDVE012"
-          description="Etapas detalhadas e status atual do pedido."
-          expectedColumns={['Pedido', 'Envio Liberação', 'Status', 'Situação']}
-          status="empty"
-        />
-        <FileSlot
-          title="Transportadoras"
-          description="Prazos (SLA) baseados em Cidade/Estado (Life/Alejo)."
-          expectedColumns={['DESTINO', 'UF', 'PRAZO TRANSPORTADORA', 'MODAL']}
-          status="empty"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {slots.map((slot) => (
+          <FileUploadCard
+            key={slot.collection}
+            slot={slot}
+            onFileSelect={(file) => handleFileSelect(slot.collection, file)}
+          />
+        ))}
       </div>
 
-      <div className="mt-8 p-6 bg-white rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
-        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-          <AlertCircle className="w-5 h-5 text-slate-500" />
-        </div>
-        <div>
-          <h4 className="text-sm font-semibold text-slate-800">Como funciona o sincronismo?</h4>
-          <p className="text-sm text-slate-500 mt-1">
-            A "Central de Pedidos" cruza a coluna{' '}
-            <code className="bg-slate-100 px-1 rounded">Pedido</code> entre o PEDVE005 e PEDVE012
-            para obter a linha do tempo completa. Em seguida, cruza a coluna{' '}
-            <code className="bg-slate-100 px-1 rounded">Cidade/DESTINO</code> com a tabela de
-            Transportadoras para subtrair o SLA e descobrir a <strong>Data para Separação</strong>{' '}
-            exata.
-          </p>
-        </div>
+      <div className="flex flex-col items-center gap-4 mt-8">
+        <Button
+          onClick={handleProcess}
+          disabled={!hasSelectedFiles || processing}
+          size="lg"
+          className="min-w-[200px]"
+        >
+          {processing ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Processando...
+            </>
+          ) : (
+            'Processar'
+          )}
+        </Button>
+        {completed && (
+          <div className="flex items-center gap-2 text-success animate-fade-in">
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="font-semibold">Finalizado!</span>
+          </div>
+        )}
       </div>
     </div>
   )
