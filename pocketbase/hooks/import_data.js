@@ -708,41 +708,73 @@ routerAdd(
       var config = item.config
       var uploadedFile = item.file
 
-      var fileBytes
-      try {
-        // filesystem.File from findUploadedFiles already has all content
-        // loaded in memory — there is no .open() method. Use .bytes()
-        // to get the content directly, with a read-loop fallback.
-        var rawBytes = null
-        try {
-          rawBytes = uploadedFile.bytes()
-        } catch (be) {}
+      var fileBytes = null
 
-        if (rawBytes && rawBytes.length > 0) {
+      // Method 1: .bytes() — goja may return []byte as Uint8Array or as a
+      // string depending on runtime version; handle both.
+      try {
+        var rawBytes = uploadedFile.bytes()
+        if (rawBytes !== null && rawBytes !== undefined && rawBytes.length > 0) {
           fileBytes = []
-          for (var bi = 0; bi < rawBytes.length; bi++) {
-            fileBytes.push(rawBytes[bi])
+          if (typeof rawBytes === 'string') {
+            for (var bi = 0; bi < rawBytes.length; bi++) {
+              fileBytes.push(rawBytes.charCodeAt(bi) & 0xff)
+            }
+          } else {
+            for (var bi = 0; bi < rawBytes.length; bi++) {
+              fileBytes.push(rawBytes[bi] & 0xff)
+            }
           }
-        } else {
-          var allBytes = []
-          var buf = new Uint8Array(8192)
-          while (true) {
-            var n
+        }
+      } catch (be) {}
+
+      // Method 2: .open() returns a reader (multipart.File) that
+      // implements io.Reader — read in chunks.
+      if (!fileBytes || fileBytes.length === 0) {
+        try {
+          var reader = uploadedFile.open()
+          if (reader) {
+            var allBytes = []
+            var buf = new Uint8Array(8192)
+            while (true) {
+              var n
+              try {
+                n = reader.read(buf)
+              } catch (readErr) {
+                break
+              }
+              if (n === null || n === undefined || n <= 0) break
+              for (var bi = 0; bi < n; bi++) allBytes.push(buf[bi])
+            }
             try {
-              n = uploadedFile.read(buf)
-            } catch (readErr) {
+              reader.close()
+            } catch (ce) {}
+            if (allBytes.length > 0) fileBytes = allBytes
+          }
+        } catch (openErr) {}
+      }
+
+      // Method 3: .read() directly on the file object (some PB versions
+      // expose Read() on filesystem.File itself).
+      if (!fileBytes || fileBytes.length === 0) {
+        try {
+          var allBytes2 = []
+          var buf2 = new Uint8Array(8192)
+          while (true) {
+            var n2
+            try {
+              n2 = uploadedFile.read(buf2)
+            } catch (readErr2) {
               break
             }
-            if (n === null || n === undefined || n <= 0) break
-            for (var bi = 0; bi < n; bi++) allBytes.push(buf[bi])
+            if (n2 === null || n2 === undefined || n2 <= 0) break
+            for (var bi2 = 0; bi2 < n2; bi2++) allBytes2.push(buf2[bi2])
           }
           try {
             uploadedFile.close()
-          } catch (ce) {}
-          fileBytes = allBytes
-        }
-      } catch (err) {
-        return e.badRequestError('Erro ao ler arquivo: ' + config.label)
+          } catch (ce2) {}
+          if (allBytes2.length > 0) fileBytes = allBytes2
+        } catch (directErr) {}
       }
 
       if (!fileBytes || fileBytes.length === 0) {
