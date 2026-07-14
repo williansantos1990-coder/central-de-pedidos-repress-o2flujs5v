@@ -37,7 +37,7 @@ export default function Login() {
               <TableProperties className="w-7 h-7 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl">GiroLógico</CardTitle>
+          <CardTitle className="text-2xl">Repress</CardTitle>
           <CardDescription>Central de Pedidos - Faça login para continuar</CardDescription>
         </CardHeader>
         <CardContent>

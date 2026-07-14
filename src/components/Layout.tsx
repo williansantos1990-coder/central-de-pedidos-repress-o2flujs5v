@@ -91,7 +91,7 @@ export default function Layout() {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-inner">
               <TableProperties className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg text-slate-800 tracking-tight">GiroLógico</span>
+            <span className="font-bold text-lg text-slate-800 tracking-tight">Repress</span>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto py-6 px-4">
@@ -124,7 +124,7 @@ export default function Layout() {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
                 <div className="h-16 flex items-center px-6 border-b border-slate-100">
-                  <span className="font-bold text-lg text-primary">GiroLógico</span>
+                  <span className="font-bold text-lg text-primary">Repress</span>
                 </div>
                 <div className="px-4">
                   <NavLinks mobile />
