@@ -142,6 +142,7 @@ export async function parseCsvFile(file: File): Promise<SheetData[]> {
         row.push(field)
         field = ''
       } else if (ch === '\r') {
+        // ignore standalone carriage returns; newlines handled below
       } else if (ch === '\n') {
         row.push(field)
         rows.push(row)
