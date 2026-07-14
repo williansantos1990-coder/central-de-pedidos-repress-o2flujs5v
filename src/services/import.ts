@@ -8,26 +8,24 @@ export interface ImportResult {
   message: string
 }
 
-export const importExcelData = async (
-  collection: string,
-  base64File: string,
-): Promise<ImportResult> => {
-  return pb.send(`/backend/v1/import/${collection}`, {
-    method: 'POST',
-    body: JSON.stringify({ file: base64File }),
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
+export const importExcelData = async (collection: string, file: File): Promise<ImportResult> => {
+  const formData = new FormData()
+  formData.append('file', file)
 
-export const readFileAsBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      const base64 = result.split(',')[1] || result
-      resolve(base64)
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
+  const res = await fetch(
+    `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/import/${collection}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: pb.authStore.token,
+      },
+      body: formData,
+    },
+  )
+
+  const data = await res.json()
+  if (!res.ok) {
+    throw new Error(data.message || 'Erro na importação')
+  }
+  return data as ImportResult
 }

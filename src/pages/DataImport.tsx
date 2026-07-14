@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { UploadCloud, FileSpreadsheet, CheckCircle2, Loader2, X, Database } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { importExcelData, readFileAsBase64 } from '@/services/import'
+import { importExcelData } from '@/services/import'
 import { cn } from '@/lib/utils'
 
 interface ImportSlot {
@@ -116,7 +116,7 @@ export default function DataImport() {
       collection: 'pedve005',
       title: 'PEDVE005',
       description: 'Dados de emissão e prazos originais.',
-      expectedColumns: ['Pedido', 'Cliente', 'Prev.Entr', 'Tp. Entrega'],
+      expectedColumns: ['Pedido', 'Cliente', 'Prev.Entr', 'Tp. Entrega', 'Cidade', 'UF'],
       file: null,
     },
     {
@@ -142,19 +142,20 @@ export default function DataImport() {
     setCompleted(false)
   }
 
-  const hasSelectedFiles = slots.some((s) => s.file !== null)
-
   const handleProcess = async () => {
     const selected = slots.filter((s) => s.file !== null)
-    if (selected.length === 0) return
+
+    if (selected.length === 0) {
+      setCompleted(true)
+      return
+    }
 
     setProcessing(true)
     setCompleted(false)
 
     try {
       for (const slot of selected) {
-        const base64 = await readFileAsBase64(slot.file!)
-        await importExcelData(slot.collection, base64)
+        await importExcelData(slot.collection, slot.file!)
       }
       setCompleted(true)
       toast.success('Finalizado!', {
@@ -184,8 +185,8 @@ export default function DataImport() {
         <Database className="h-5 w-5 !text-primary" />
         <AlertTitle className="font-bold">Importação de Dados</AlertTitle>
         <AlertDescription className="text-sm mt-2 leading-relaxed">
-          Selecione um ou mais arquivos .xlsx para importar. Apenas as coleções com arquivo
-          selecionado serão atualizadas — os dados das demais permanecem intactos.
+          Selecione um ou mais arquivos .xlsx para importar. Os dados das coleções selecionadas
+          serão substituídos completamente — os dados das demais permanecem intactos.
         </AlertDescription>
       </Alert>
 
@@ -200,12 +201,7 @@ export default function DataImport() {
       </div>
 
       <div className="flex flex-col items-center gap-4 mt-8">
-        <Button
-          onClick={handleProcess}
-          disabled={!hasSelectedFiles || processing}
-          size="lg"
-          className="min-w-[200px]"
-        >
+        <Button onClick={handleProcess} disabled={processing} size="lg" className="min-w-[200px]">
           {processing ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
