@@ -48,7 +48,7 @@ const FILE_SLOTS: FileSlot[] = [
     label: 'Transportadoras',
     description: 'Prazos e modais',
     icon: Truck,
-    sheet: null,
+    sheet: 'Transportadoras',
   },
 ]
 
@@ -279,7 +279,8 @@ export default function DataImport() {
                 <strong>"PEDVE005"</strong>
               </li>
               <li>
-                Para <strong>Transportadoras</strong>, a primeira aba será utilizada
+                Para <strong>Transportadoras</strong>, o arquivo deve conter uma aba chamada{' '}
+                <strong>"Transportadoras"</strong>
               </li>
               <li>
                 Formatos aceitos: <strong>XLSX</strong> e <strong>CSV</strong> (UTF-8)

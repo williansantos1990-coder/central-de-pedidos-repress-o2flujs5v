@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-14T16:22:56.395Z",
+  "generatedAt": "2026-07-14T16:56:30.158Z",
   "collections": [
     {
       "name": "users",
@@ -257,11 +257,36 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "padrao_exceda",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "transportadora",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "prazo_transp_desc",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "prazo_entrega",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
-        "CREATE INDEX idx_transportadoras_destino ON transportadoras (destino)",
-        "CREATE INDEX idx_transportadoras_uf ON transportadoras (uf)"
+        "CREATE INDEX `idx_transportadoras_destino` ON `transportadoras` (destino)",
+        "CREATE INDEX `idx_transportadoras_uf` ON `transportadoras` (uf)",
+        "CREATE INDEX `idx_transportadoras_transportadora` ON `transportadoras` (transportadora)"
       ]
     }
   ]

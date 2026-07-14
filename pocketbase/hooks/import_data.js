@@ -8,7 +8,12 @@ routerAdd(
     var collectionsConfig = [
       { name: 'pedve012', field: 'pedve012', sheet: 'PEDVE012', label: 'PEDVE012' },
       { name: 'pedve005', field: 'pedve005', sheet: 'PEDVE005', label: 'PEDVE005' },
-      { name: 'transportadoras', field: 'transportadoras', sheet: null, label: 'Transportadoras' },
+      {
+        name: 'transportadoras',
+        field: 'transportadoras',
+        sheet: 'Transportadoras',
+        label: 'Transportadoras',
+      },
     ]
 
     var pendingFiles = []
@@ -164,14 +169,6 @@ routerAdd(
     }
 
     function matchField(normalized, fnames) {
-      for (var i = 0; i < fnames.length; i++) {
-        var fn = fnames[i]
-        var fnNorm = fn
-          .toLowerCase()
-          .replace(/_/g, '')
-          .replace(/[^a-z0-9]/g, '')
-        if (fnNorm === normalized) return fn
-      }
       var aliases = {
         pedido: ['pedido', 'ped', 'numero', 'num', 'numped', 'npedido'],
         cliente: ['cliente', 'client', 'nome', 'razao', 'razaosocial', 'nomedocliente'],
@@ -188,11 +185,15 @@ routerAdd(
         uf: ['uf', 'estado', 'state'],
         envio_liberacao: ['envioliberacao', 'envio', 'liberacao', 'dataliberacao'],
         transmitir_nfe: ['transmitirnfe', 'nfe', 'transmitir', 'datanfe'],
-        prazo_transportadora: ['prazotransportadora', 'prazo', 'prazotransp'],
+        prazo_transportadora: ['prazo'],
+        prazo_transp_desc: ['prazotransportadora', 'prazotranspdesc', 'prazotransp'],
+        prazo_entrega: ['prazoentrega', 'prazodeentrega'],
+        padrao_exceda: ['padraoexceda', 'padraodoexceda', 'exceda', 'padrao'],
+        transportadora: ['transportadora', 'transp', 'carrier'],
         status: ['status', 'stat'],
         situacao: ['situacao', 'sit'],
         modal: ['modal', 'mod'],
-        destino: ['destino', 'cidade', 'city'],
+        destino: ['destino'],
       }
       for (var i = 0; i < fnames.length; i++) {
         var fn = fnames[i]
@@ -201,6 +202,14 @@ routerAdd(
         for (var j = 0; j < aliasList.length; j++) {
           if (aliasList[j] === normalized) return fn
         }
+      }
+      for (var i = 0; i < fnames.length; i++) {
+        var fn = fnames[i]
+        var fnNorm = fn
+          .toLowerCase()
+          .replace(/_/g, '')
+          .replace(/[^a-z0-9]/g, '')
+        if (fnNorm === normalized) return fn
       }
       return null
     }
