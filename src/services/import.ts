@@ -8,24 +8,11 @@ export interface ImportResult {
   message: string
 }
 
-export const importExcelData = async (collection: string, file: File): Promise<ImportResult> => {
+export async function importData(collection: string, file: File): Promise<ImportResult> {
   const formData = new FormData()
   formData.append('file', file)
-
-  const res = await fetch(
-    `${import.meta.env.VITE_POCKETBASE_URL}/backend/v1/import/${collection}`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: pb.authStore.token,
-      },
-      body: formData,
-    },
-  )
-
-  const data = await res.json()
-  if (!res.ok) {
-    throw new Error(data.message || 'Erro na importação')
-  }
-  return data as ImportResult
+  return pb.send(`/backend/v1/import/${collection}`, {
+    method: 'POST',
+    body: formData,
+  })
 }
