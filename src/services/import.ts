@@ -24,8 +24,29 @@ export async function importAllData(files: {
   if (files.pedve012) formData.append('pedve012', files.pedve012)
   if (files.pedve005) formData.append('pedve005', files.pedve005)
   if (files.transportadoras) formData.append('transportadoras', files.transportadoras)
-  return pb.send('/backend/v1/import', {
+
+  const baseUrl = import.meta.env.VITE_POCKETBASE_URL
+  const response = await fetch(`${baseUrl}/backend/v1/import`, {
     method: 'POST',
+    headers: {
+      Authorization: pb.authStore.token || '',
+    },
     body: formData,
   })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    let message = 'Erro ao processar importação'
+    if (typeof data === 'string' && data.length > 0) {
+      message = data
+    } else if (data?.message) {
+      message = data.message
+    } else if (data?.data?.message) {
+      message = data.data.message
+    }
+    throw new Error(message)
+  }
+
+  return data as ImportAllResult
 }

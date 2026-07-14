@@ -837,75 +837,133 @@ routerAdd(
 
       var fileBytes = null
 
-      // Method 1: .bytes() — goja may return []byte as Uint8Array or as a
-      // string depending on runtime version; handle both.
       try {
-        var rawBytes = uploadedFile.bytes()
-        if (rawBytes !== null && rawBytes !== undefined && rawBytes.length > 0) {
-          fileBytes = []
-          if (typeof rawBytes === 'string') {
-            for (var bi = 0; bi < rawBytes.length; bi++) {
-              fileBytes.push(rawBytes.charCodeAt(bi) & 0xff)
-            }
-          } else {
-            for (var bi = 0; bi < rawBytes.length; bi++) {
-              fileBytes.push(rawBytes[bi] & 0xff)
+        var fSize = -1
+        try {
+          fSize = uploadedFile.size
+        } catch (_) {}
+        $app
+          .logger()
+          .info(
+            'import file info',
+            'field',
+            config.field,
+            'label',
+            config.label,
+            'size',
+            fSize,
+            'hasBytes',
+            typeof uploadedFile.bytes,
+            'hasOpen',
+            typeof uploadedFile.open,
+          )
+      } catch (_) {}
+
+      try {
+        if (typeof uploadedFile.bytes === 'function') {
+          var rawBytes = uploadedFile.bytes()
+          if (rawBytes !== null && rawBytes !== undefined) {
+            if (typeof rawBytes === 'string') {
+              if (rawBytes.length > 0) {
+                fileBytes = []
+                for (var bi = 0; bi < rawBytes.length; bi++) {
+                  fileBytes.push(rawBytes.charCodeAt(bi) & 0xff)
+                }
+              }
+            } else if (typeof rawBytes.length === 'number' && rawBytes.length > 0) {
+              fileBytes = []
+              for (var bi = 0; bi < rawBytes.length; bi++) {
+                fileBytes.push(rawBytes[bi] & 0xff)
+              }
+            } else if (typeof rawBytes.byteLength === 'number' && rawBytes.byteLength > 0) {
+              fileBytes = []
+              for (var bi = 0; bi < rawBytes.byteLength; bi++) {
+                fileBytes.push(rawBytes[bi] & 0xff)
+              }
+            } else {
+              try {
+                var rawStr = String(rawBytes)
+                if (rawStr && rawStr.length > 0 && rawStr !== '[object Object]') {
+                  fileBytes = []
+                  for (var bi = 0; bi < rawStr.length; bi++) {
+                    fileBytes.push(rawStr.charCodeAt(bi) & 0xff)
+                  }
+                }
+              } catch (_) {}
             }
           }
+          if (fileBytes && fileBytes.length > 0) {
+            $app
+              .logger()
+              .info('import bytes() ok', 'field', config.field, 'bytes', fileBytes.length)
+          } else {
+            $app
+              .logger()
+              .warn(
+                'import bytes() empty',
+                'field',
+                config.field,
+                'type',
+                typeof rawBytes,
+                'hasLength',
+                typeof rawBytes === 'object' ? 'yes' : 'no',
+              )
+          }
+        } else {
+          $app
+            .logger()
+            .warn(
+              'import no bytes() method',
+              'field',
+              config.field,
+              'bytesType',
+              typeof uploadedFile.bytes,
+            )
         }
-      } catch (be) {}
+      } catch (be) {
+        $app.logger().error('import bytes() error', 'field', config.field, 'err', be.toString())
+      }
 
-      // Method 2: .open() returns a reader (multipart.File) that
-      // implements io.Reader — read in chunks.
-      if (!fileBytes || fileBytes.length === 0) {
+      if ((!fileBytes || fileBytes.length === 0) && typeof uploadedFile.open === 'function') {
         try {
           var reader = uploadedFile.open()
           if (reader) {
-            var allBytes = []
-            var buf = new Uint8Array(8192)
-            while (true) {
+            fileBytes = []
+            var oneBuf = [0]
+            var safety = 50000000
+            while (fileBytes.length < safety) {
               var n
               try {
-                n = reader.read(buf)
-              } catch (readErr) {
+                n = reader.read(oneBuf)
+              } catch (re) {
                 break
               }
               if (n === null || n === undefined || n <= 0) break
-              for (var bi = 0; bi < n; bi++) allBytes.push(buf[bi])
+              fileBytes.push(oneBuf[0] & 0xff)
             }
             try {
               reader.close()
-            } catch (ce) {}
-            if (allBytes.length > 0) fileBytes = allBytes
-          }
-        } catch (openErr) {}
-      }
-
-      // Method 3: .read() directly on the file object (some PB versions
-      // expose Read() on filesystem.File itself).
-      if (!fileBytes || fileBytes.length === 0) {
-        try {
-          var allBytes2 = []
-          var buf2 = new Uint8Array(8192)
-          while (true) {
-            var n2
-            try {
-              n2 = uploadedFile.read(buf2)
-            } catch (readErr2) {
-              break
+            } catch (_) {}
+            if (fileBytes.length === 0) fileBytes = null
+            if (fileBytes && fileBytes.length > 0) {
+              $app
+                .logger()
+                .info('import open() ok', 'field', config.field, 'bytes', fileBytes.length)
             }
-            if (n2 === null || n2 === undefined || n2 <= 0) break
-            for (var bi2 = 0; bi2 < n2; bi2++) allBytes2.push(buf2[bi2])
           }
-          try {
-            uploadedFile.close()
-          } catch (ce2) {}
-          if (allBytes2.length > 0) fileBytes = allBytes2
-        } catch (directErr) {}
+        } catch (oe) {
+          $app.logger().error('import open() error', 'field', config.field, 'err', oe.toString())
+        }
       }
 
       if (!fileBytes || fileBytes.length === 0) {
-        return e.badRequestError('Arquivo vazio: ' + config.label)
+        return e.badRequestError(
+          'Nao foi possivel ler o arquivo ' +
+            config.label +
+            '. ' +
+            'Verifique se o arquivo nao esta vazio ou corrompido. ' +
+            'Tente salvar novamente como .xlsx ou .csv (UTF-8).',
+        )
       }
 
       var isXlsx = fileBytes.length >= 2 && fileBytes[0] === 0x50 && fileBytes[1] === 0x4b
@@ -991,6 +1049,33 @@ routerAdd(
 
       if (headerMap.length === 0) {
         return e.badRequestError('Nenhum cabecalho reconhecido no arquivo ' + config.label)
+      }
+
+      var requiredFieldsMap = {
+        pedve012: ['pedido'],
+        pedve005: ['pedido'],
+        transportadoras: ['destino'],
+      }
+      var required = requiredFieldsMap[collectionName]
+      if (required) {
+        var mappedFields = {}
+        for (var hmi = 0; hmi < headerMap.length; hmi++) {
+          mappedFields[headerMap[hmi].field] = true
+        }
+        var missingFields = []
+        for (var rfi = 0; rfi < required.length; rfi++) {
+          if (!mappedFields[required[rfi]]) {
+            missingFields.push(required[rfi])
+          }
+        }
+        if (missingFields.length > 0) {
+          return e.badRequestError(
+            'Campos obrigatorios ausentes no arquivo ' +
+              config.label +
+              ': ' +
+              missingFields.join(', '),
+          )
+        }
       }
 
       parsed.push({
@@ -1118,8 +1203,15 @@ routerAdd(
         errors: errorCount,
         message:
           errorCount > 0
-            ? insertedCount + ' registros importados, ' + errorCount + ' erros'
-            : insertedCount + ' registros importados com sucesso',
+            ? 'Importacao parcial: ' +
+              insertedCount +
+              ' registros processados, ' +
+              errorCount +
+              ' erros'
+            : 'Importacao concluida: ' +
+              insertedCount +
+              ' registros processados com sucesso na base ' +
+              p.config.label,
       })
     }
 

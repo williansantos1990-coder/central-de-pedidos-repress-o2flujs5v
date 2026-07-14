@@ -91,7 +91,17 @@ export default function DataImport() {
       const res = await importAllData(files)
       setResult(res)
       if (res.success) {
-        toast.success('Finalizado!')
+        res.results.forEach((r) => {
+          if (r.errors > 0) {
+            toast.warning(
+              `Importação parcial: ${r.inserted} registros na base ${r.label} (${r.errors} erros)`,
+            )
+          } else {
+            toast.success(
+              `Importação concluída: ${r.inserted} registros processados com sucesso na base ${r.label}`,
+            )
+          }
+        })
       } else {
         toast.error('Erro ao processar dados')
       }
@@ -219,7 +229,7 @@ export default function DataImport() {
         <Alert className="border-green-500/30 bg-green-500/5">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertDescription>
-            <span className="font-semibold text-green-700 text-base">Finalizado!</span>
+            <span className="font-semibold text-green-700 text-base">Importação Concluída</span>
             <div className="mt-3 space-y-1.5">
               {result.results.map((r) => (
                 <div
@@ -235,7 +245,7 @@ export default function DataImport() {
                   </span>
                 </div>
               ))}
-            </div>
+            </div>{' '}
           </AlertDescription>
         </Alert>
       )}
