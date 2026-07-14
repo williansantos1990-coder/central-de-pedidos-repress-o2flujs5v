@@ -38,6 +38,14 @@ routerAdd(
         field: 'transportadoras',
         sheet: 'Transportadoras',
         label: 'Transportadoras',
+        columnMap: [
+          { col: 0, field: 'destino' },
+          { col: 1, field: 'uf' },
+          { col: 2, field: 'padrao_do_exceda' },
+          { col: 3, field: 'transportadora' },
+          { col: 4, field: 'prazo_transportadora' },
+          { col: 5, field: 'prazo_de_entrega' },
+        ],
       },
     ]
 
@@ -242,10 +250,9 @@ routerAdd(
         marcado_entrega: ['marcadoentrega', 'datamarcadoentrega', 'marcadoentreg'],
         destino: ['destino'],
         modal: ['modal', 'mod'],
-        prazo_transportadora: ['prazo'],
-        prazo_transp_desc: ['prazotransportadora', 'prazotranspdesc', 'prazotransp'],
-        prazo_entrega: ['prazoentrega', 'prazodeentrega'],
-        padrao_exceda: ['padraoexceda', 'padraodoexceda', 'exceda', 'padrao'],
+        prazo_transportadora: ['prazotransportadora', 'prazotransp', 'prazo'],
+        prazo_de_entrega: ['prazoentrega', 'prazodeentrega'],
+        padrao_do_exceda: ['padraoexceda', 'padraodoexceda', 'exceda', 'padrao'],
         transportadora: ['transportadora', 'transp', 'carrier'],
         status: ['status', 'stat'],
         emissao: ['emissao', 'dataemissao', 'dtemissao'],
