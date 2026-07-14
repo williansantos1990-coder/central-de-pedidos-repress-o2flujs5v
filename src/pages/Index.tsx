@@ -2,7 +2,14 @@ import React, { useState, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { mockOrders, heatmapMonths, heatmapDataByDay } from '@/lib/mock-data'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Package, Clock, AlertTriangle, Info, Calendar as CalendarIcon } from 'lucide-react'
+import {
+  Package,
+  Clock,
+  Info,
+  Calendar as CalendarIcon,
+  Hourglass,
+  CheckCircle2,
+} from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -20,39 +27,49 @@ import { format, isSameDay, getHours } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
 
 function getHeatmapColor(percent: number | null | undefined) {
   if (percent === null || percent === undefined) return ''
-  if (percent >= 90) return 'bg-[#ffe599] text-[#786011]' // Yellow
-  if (percent >= 60) return 'bg-[#f8cbad] text-[#8a4b24]' // Light Orange
-  return 'bg-[#ea9999] text-[#7a2020]' // Red
+  if (percent >= 90) return 'bg-[#ffe599] text-[#786011]'
+  if (percent >= 60) return 'bg-[#f8cbad] text-[#8a4b24]'
+  return 'bg-[#ea9999] text-[#7a2020]'
 }
 
-// Donut Chart Colors
 const PIE_COLORS = ['hsl(var(--success))', 'hsl(var(--destructive))']
 
 export default function Index() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
+  const [selectedTpEntrega, setSelectedTpEntrega] = useState<string>('all')
+  const [selectedSituacao, setSelectedSituacao] = useState<string>('all')
 
   const filteredOrders = useMemo(() => {
-    if (!selectedDate) return mockOrders
-    return mockOrders.filter((o) => isSameDay(o.envioLiberacao, selectedDate))
-  }, [selectedDate])
+    let result = mockOrders
+    if (selectedDate) {
+      result = result.filter((o) => isSameDay(o.envioLiberacao, selectedDate))
+    }
+    if (selectedTpEntrega !== 'all') {
+      result = result.filter((o) => o.tpEntrega === selectedTpEntrega)
+    }
+    if (selectedSituacao !== 'all') {
+      result = result.filter((o) => o.situacao === selectedSituacao)
+    }
+    return result
+  }, [selectedDate, selectedTpEntrega, selectedSituacao])
 
   const metrics = useMemo(() => {
     const baseData = filteredOrders
-
     const liberadosHoje = baseData.length
-    const aguardandoSep = baseData.filter((o) => o.status === 'Aguardando Separação').length
-
-    const emFluxoGargalo = baseData.filter((o) =>
-      ['Em Separação', 'Conferência', 'Faturado'].includes(o.status),
-    ).length
-    const pctGargalo = baseData.length ? Math.round((emFluxoGargalo / baseData.length) * 100) : 0
-
+    const naoFinalizou = baseData.filter((o) => o.envioLiberacao && !o.transmitirNfe).length
+    const finalizados = baseData.filter((o) => o.transmitirNfe !== null).length
     const posCorte = baseData.filter((o) => getHours(o.envioLiberacao) >= 11).length
-
-    return { liberadosHoje, aguardandoSep, pctGargalo, posCorte }
+    return { liberadosHoje, naoFinalizou, finalizados, posCorte }
   }, [filteredOrders])
 
   const statusData = useMemo(() => {
@@ -79,15 +96,13 @@ export default function Index() {
     ]
   }, [filteredOrders])
 
-  // SLA inner label calculation
   const totalSla = slaData.reduce((acc, curr) => acc + curr.value, 0)
   const slaCompliancePercent = totalSla > 0 ? Math.round((slaData[0].value / totalSla) * 100) : 0
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Top Bar / Filters */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -119,13 +134,34 @@ export default function Index() {
               Limpar
             </Button>
           )}
+          <Select value={selectedTpEntrega} onValueChange={setSelectedTpEntrega}>
+            <SelectTrigger className="w-[150px] h-9">
+              <SelectValue placeholder="Tp. Entrega" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Tipos</SelectItem>
+              <SelectItem value="Padrão">Padrão</SelectItem>
+              <SelectItem value="Expressa">Expressa</SelectItem>
+              <SelectItem value="Econômica">Econômica</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={selectedSituacao} onValueChange={setSelectedSituacao}>
+            <SelectTrigger className="w-[150px] h-9">
+              <SelectValue placeholder="Situação" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Situações</SelectItem>
+              <SelectItem value="Normal">Normal</SelectItem>
+              <SelectItem value="Atrasado">Atrasado</SelectItem>
+              <SelectItem value="Gargalo">Gargalo</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="text-sm text-slate-500 font-medium">
           Pedidos no período: {filteredOrders.length}
         </div>
       </div>
 
-      {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="shadow-subtle hover:shadow-md transition-shadow border-slate-200/60">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -142,46 +178,27 @@ export default function Index() {
 
         <Card className="shadow-subtle hover:shadow-md transition-shadow border-slate-200/60">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-semibold text-slate-600">
-              Aguardando Separação
-            </CardTitle>
-            <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600">
-              <Clock className="w-4 h-4" />
+            <CardTitle className="text-sm font-semibold text-slate-600">Não finalizou</CardTitle>
+            <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+              <Hourglass className="w-4 h-4" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-800">{metrics.aguardandoSep}</div>
-            <p className="text-xs text-slate-500 mt-1">Pedidos aguardando picking</p>
+            <div className="text-3xl font-bold text-slate-800">{metrics.naoFinalizou}</div>
+            <p className="text-xs text-slate-500 mt-1">Pedidos em andamento no fluxo</p>
           </CardContent>
         </Card>
 
-        <Card
-          className={cn(
-            'shadow-subtle hover:shadow-md transition-all border-slate-200/60 relative overflow-hidden',
-            metrics.pctGargalo > 30 && 'border-warning/50 bg-warning/5',
-          )}
-        >
-          {metrics.pctGargalo > 30 && (
-            <div className="absolute top-0 right-0 w-16 h-16 bg-warning/10 rounded-bl-full -z-0"></div>
-          )}
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 relative z-10">
-            <CardTitle className="text-sm font-semibold text-slate-600">
-              Gargalo Operacional
-            </CardTitle>
-            <div
-              className={cn(
-                'w-8 h-8 rounded-lg flex items-center justify-center',
-                metrics.pctGargalo > 30
-                  ? 'bg-warning/20 text-warning animate-pulse-ring'
-                  : 'bg-warning/10 text-warning',
-              )}
-            >
-              <AlertTriangle className="w-4 h-4" />
+        <Card className="shadow-subtle hover:shadow-md transition-shadow border-slate-200/60">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-semibold text-slate-600">Finalizados</CardTitle>
+            <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center text-success">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
           </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-3xl font-bold text-slate-800">{metrics.pctGargalo}%</div>
-            <p className="text-xs text-slate-500 mt-1">Em trânsito int. (Separação - NFe)</p>
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-800">{metrics.finalizados}</div>
+            <p className="text-xs text-slate-500 mt-1">Pedidos com NFe transmitida</p>
           </CardContent>
         </Card>
 
@@ -201,7 +218,6 @@ export default function Index() {
         </Card>
       </div>
 
-      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="shadow-subtle border-slate-200/60">
           <CardHeader>
@@ -334,7 +350,6 @@ export default function Index() {
         </Card>
       </div>
 
-      {/* Heatmap Grid Section */}
       <Card className="shadow-subtle border-slate-200/60">
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-semibold text-slate-800">
@@ -413,7 +428,6 @@ export default function Index() {
         </CardContent>
       </Card>
 
-      {/* Insights Section */}
       <div className="bg-primary/5 border border-primary/10 rounded-xl p-5 relative overflow-hidden mt-6">
         <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
         <h3 className="text-sm font-bold text-primary flex items-center gap-2 mb-3">
@@ -421,9 +435,9 @@ export default function Index() {
         </h3>
         <ul className="space-y-2">
           <li className="text-sm text-slate-700 flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-warning mt-1.5 shrink-0"></span>
-            Acompanhe o volume diário de liberação vs faturamento para identificar desvios de
-            capacidade no <strong>Volume Operacional</strong>.
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0"></span>
+            Existem <strong>{metrics.naoFinalizou} pedidos</strong> que entraram no fluxo
+            operacional mas ainda não foram finalizados (sem NFe transmitida).
           </li>
           <li className="text-sm text-slate-700 flex items-start gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-1.5 shrink-0"></span>
@@ -432,8 +446,8 @@ export default function Index() {
           </li>
           <li className="text-sm text-slate-700 flex items-start gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-success mt-1.5 shrink-0"></span>
-            A taxa global de SLA monitora o cumprimento do prazo acordado com as transportadoras
-            para toda a operação.
+            <strong>{metrics.finalizados} pedidos</strong> foram finalizados com NFe transmitida no
+            período selecionado.
           </li>
         </ul>
       </div>

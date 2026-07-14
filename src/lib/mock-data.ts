@@ -4,11 +4,12 @@ export interface OperationalOrder {
   pedido: string
   cliente: string
   envioLiberacao: Date
+  transmitirNfe: Date | null
   prevEntr: Date
   tpEntrega: string
   cidade: string
   uf: string
-  prazoTransportadora: number // Em dias
+  prazoTransportadora: number
   status:
     | 'Aguardando Separação'
     | 'Em Separação'
@@ -21,12 +22,12 @@ export interface OperationalOrder {
 
 const today = new Date()
 
-// Gera dados mockados consistentes com a especificação (mas SEM as linhas reais dos arquivos)
 export const mockOrders: OperationalOrder[] = [
   {
     pedido: 'PED-1001',
     cliente: 'Logística Alfa Ltda',
     envioLiberacao: setMinutes(setHours(today, 9), 30),
+    transmitirNfe: null,
     prevEntr: addDays(today, 5),
     tpEntrega: 'Padrão',
     cidade: 'SÃO PAULO',
@@ -39,6 +40,7 @@ export const mockOrders: OperationalOrder[] = [
     pedido: 'PED-1002',
     cliente: 'Comercial Beta S.A.',
     envioLiberacao: setMinutes(setHours(subDays(today, 1), 14), 15),
+    transmitirNfe: null,
     prevEntr: addDays(today, 2),
     tpEntrega: 'Expressa',
     cidade: 'CAMPINAS',
@@ -51,6 +53,7 @@ export const mockOrders: OperationalOrder[] = [
     pedido: 'PED-1003',
     cliente: 'Distribuidora Gama',
     envioLiberacao: setMinutes(setHours(subDays(today, 2), 10), 0),
+    transmitirNfe: setMinutes(setHours(subDays(today, 1), 16), 0),
     prevEntr: today,
     tpEntrega: 'Padrão',
     cidade: 'BELO HORIZONTE',
@@ -62,7 +65,8 @@ export const mockOrders: OperationalOrder[] = [
   {
     pedido: 'PED-1004',
     cliente: 'Varejo Delta',
-    envioLiberacao: setMinutes(setHours(today, 11), 45), // Pós-corte
+    envioLiberacao: setMinutes(setHours(today, 11), 45),
+    transmitirNfe: null,
     prevEntr: addDays(today, 6),
     tpEntrega: 'Econômica',
     cidade: 'CURITIBA',
@@ -75,6 +79,7 @@ export const mockOrders: OperationalOrder[] = [
     pedido: 'PED-1005',
     cliente: 'E-commerce Ômega',
     envioLiberacao: setMinutes(setHours(today, 8), 10),
+    transmitirNfe: null,
     prevEntr: addDays(today, 8),
     tpEntrega: 'Padrão',
     cidade: 'SALVADOR',
@@ -87,6 +92,7 @@ export const mockOrders: OperationalOrder[] = [
     pedido: 'PED-1006',
     cliente: 'Lojas Zeta',
     envioLiberacao: setMinutes(setHours(subDays(today, 1), 16), 20),
+    transmitirNfe: null,
     prevEntr: addDays(today, 3),
     tpEntrega: 'Expressa',
     cidade: 'RIO DE JANEIRO',
@@ -99,6 +105,7 @@ export const mockOrders: OperationalOrder[] = [
     pedido: 'PED-1007',
     cliente: 'Atacado Sigma',
     envioLiberacao: setMinutes(setHours(subDays(today, 3), 9), 0),
+    transmitirNfe: null,
     prevEntr: subDays(today, 1),
     tpEntrega: 'Padrão',
     cidade: 'PORTO ALEGRE',
@@ -111,6 +118,7 @@ export const mockOrders: OperationalOrder[] = [
     pedido: 'PED-1008',
     cliente: 'Tech Vendas',
     envioLiberacao: setMinutes(setHours(today, 10), 15),
+    transmitirNfe: null,
     prevEntr: addDays(today, 7),
     tpEntrega: 'Padrão',
     cidade: 'GOIANIA',
@@ -119,14 +127,51 @@ export const mockOrders: OperationalOrder[] = [
     status: 'Aguardando Separação',
     situacao: 'Normal',
   },
+  {
+    pedido: 'PED-1009',
+    cliente: 'Mercadinho União',
+    envioLiberacao: setMinutes(setHours(today, 10), 0),
+    transmitirNfe: setMinutes(setHours(today, 14), 0),
+    prevEntr: addDays(today, 4),
+    tpEntrega: 'Expressa',
+    cidade: 'FORTALEZA',
+    uf: 'CE',
+    prazoTransportadora: 3,
+    status: 'Transmitido NFe',
+    situacao: 'Normal',
+  },
+  {
+    pedido: 'PED-1010',
+    cliente: 'Supermercados Pão Quente',
+    envioLiberacao: setMinutes(setHours(subDays(today, 1), 9), 0),
+    transmitirNfe: setMinutes(setHours(subDays(today, 1), 15), 0),
+    prevEntr: addDays(today, 1),
+    tpEntrega: 'Padrão',
+    cidade: 'RECIFE',
+    uf: 'PE',
+    prazoTransportadora: 5,
+    status: 'Transmitido NFe',
+    situacao: 'Normal',
+  },
+  {
+    pedido: 'PED-1011',
+    cliente: 'Distribuidora Norte',
+    envioLiberacao: setMinutes(setHours(today, 8), 30),
+    transmitirNfe: setMinutes(setHours(today, 13), 0),
+    prevEntr: addDays(today, 3),
+    tpEntrega: 'Econômica',
+    cidade: 'MANAUS',
+    uf: 'AM',
+    prazoTransportadora: 7,
+    status: 'Finalizado',
+    situacao: 'Normal',
+  },
 ]
 
-// Helper to calculate Data para Separação
 export function calcularDataSeparacao(prevEntr: Date, prazoTransportadora: number): Date {
   return subDays(prevEntr, prazoTransportadora)
 }
 
-// Helper to calculate Data Segura
 export function calcularDataSegura(dataSeparacao: Date): Date {
   return subDays(dataSeparacao, 1)
 }
