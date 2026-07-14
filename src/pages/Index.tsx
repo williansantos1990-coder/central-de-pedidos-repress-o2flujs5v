@@ -9,6 +9,7 @@ import {
   Calendar as CalendarIcon,
   Hourglass,
   CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react'
 import {
   Bar,
@@ -34,6 +35,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select'
 
 function getHeatmapColor(percent: number | null | undefined) {
   if (percent === null || percent === undefined) return ''
@@ -46,16 +48,21 @@ const PIE_COLORS = ['hsl(var(--success))', 'hsl(var(--destructive))']
 
 export default function Index() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
-  const [selectedTpEntrega, setSelectedTpEntrega] = useState<string>('all')
+  const [selectedTpEntrega, setSelectedTpEntrega] = useState<string[]>([])
   const [selectedSituacao, setSelectedSituacao] = useState<string>('all')
+
+  const tpEntregaOptions: MultiSelectOption[] = useMemo(() => {
+    const unique = Array.from(new Set(mockOrders.map((o) => o.tpEntrega)))
+    return unique.map((v) => ({ label: v, value: v }))
+  }, [])
 
   const filteredOrders = useMemo(() => {
     let result = mockOrders
     if (selectedDate) {
       result = result.filter((o) => isSameDay(o.envioLiberacao, selectedDate))
     }
-    if (selectedTpEntrega !== 'all') {
-      result = result.filter((o) => o.tpEntrega === selectedTpEntrega)
+    if (selectedTpEntrega.length > 0) {
+      result = result.filter((o) => selectedTpEntrega.includes(o.tpEntrega))
     }
     if (selectedSituacao !== 'all') {
       result = result.filter((o) => o.situacao === selectedSituacao)
@@ -69,7 +76,8 @@ export default function Index() {
     const naoFinalizou = baseData.filter((o) => o.envioLiberacao && !o.transmitirNfe).length
     const finalizados = baseData.filter((o) => o.transmitirNfe !== null).length
     const posCorte = baseData.filter((o) => getHours(o.envioLiberacao) >= 11).length
-    return { liberadosHoje, naoFinalizou, finalizados, posCorte }
+    const urgentes = baseData.filter((o) => isSameDay(o.envioLiberacao, o.prevEntr)).length
+    return { liberadosHoje, naoFinalizou, finalizados, posCorte, urgentes }
   }, [filteredOrders])
 
   const statusData = useMemo(() => {
@@ -134,17 +142,22 @@ export default function Index() {
               Limpar
             </Button>
           )}
-          <Select value={selectedTpEntrega} onValueChange={setSelectedTpEntrega}>
-            <SelectTrigger className="w-[150px] h-9">
-              <SelectValue placeholder="Tp. Entrega" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Tipos</SelectItem>
-              <SelectItem value="Padrão">Padrão</SelectItem>
-              <SelectItem value="Expressa">Expressa</SelectItem>
-              <SelectItem value="Econômica">Econômica</SelectItem>
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            options={tpEntregaOptions}
+            selected={selectedTpEntrega}
+            onChange={setSelectedTpEntrega}
+            placeholder="Tp. Entrega"
+            className="w-[180px]"
+          />
+          {selectedTpEntrega.length > 0 && (
+            <Button
+              variant="ghost"
+              onClick={() => setSelectedTpEntrega([])}
+              className="h-9 px-3 text-xs"
+            >
+              Limpar
+            </Button>
+          )}
           <Select value={selectedSituacao} onValueChange={setSelectedSituacao}>
             <SelectTrigger className="w-[150px] h-9">
               <SelectValue placeholder="Situação" />
@@ -162,7 +175,7 @@ export default function Index() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <Card className="shadow-subtle hover:shadow-md transition-shadow border-slate-200/60">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-semibold text-slate-600">Total Liberado</CardTitle>
@@ -186,6 +199,19 @@ export default function Index() {
           <CardContent>
             <div className="text-3xl font-bold text-slate-800">{metrics.naoFinalizou}</div>
             <p className="text-xs text-slate-500 mt-1">Pedidos em andamento no fluxo</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-subtle hover:shadow-md transition-shadow border-slate-200/60">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-semibold text-slate-600">Pedidos Urgentes</CardTitle>
+            <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-800">{metrics.urgentes}</div>
+            <p className="text-xs text-slate-500 mt-1">Liberação igual à data de entrada</p>
           </CardContent>
         </Card>
 
@@ -434,6 +460,11 @@ export default function Index() {
           <Info className="w-4 h-4" /> Insights Automáticos
         </h3>
         <ul className="space-y-2">
+          <li className="text-sm text-slate-700 flex items-start gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0"></span>
+            Existem <strong>{metrics.urgentes} pedidos urgentes</strong> onde a data de liberação é
+            igual à data de entrada prevista, exigindo ação imediata.
+          </li>
           <li className="text-sm text-slate-700 flex items-start gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0"></span>
             Existem <strong>{metrics.naoFinalizou} pedidos</strong> que entraram no fluxo

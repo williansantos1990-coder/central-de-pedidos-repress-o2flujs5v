@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-14T13:58:26.047Z",
+  "generatedAt": "2026-07-14T14:17:18.256Z",
   "collections": [
     {
       "name": "users",
@@ -42,6 +42,104 @@
       "indexes": [
         "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
         "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "pedve012",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "pedido",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "cliente",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "envio_liberacao",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "prev_entr",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "transmitir_nfe",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tipo_entrega",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cidade",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "uf",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "prazo_transportadora",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "situacao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_pedve012_tipo_entrega ON pedve012 (tipo_entrega)",
+        "CREATE INDEX idx_pedve012_envio_liberacao ON pedve012 (envio_liberacao)",
+        "CREATE INDEX idx_pedve012_prev_entr ON pedve012 (prev_entr)"
       ]
     }
   ]
