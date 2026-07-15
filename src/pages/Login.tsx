@@ -6,13 +6,30 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TableProperties, Loader2 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
+
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetSuccess, setResetSuccess] = useState(false)
+  const [resetError, setResetError] = useState('')
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
+
+  const { signIn, resetPassword } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,6 +43,26 @@ export default function Login() {
       navigate('/')
     }
     setLoading(false)
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setResetLoading(true)
+    setResetError('')
+    setResetSuccess(false)
+
+    const { error } = await resetPassword(resetEmail)
+    if (error) {
+      setResetError('Erro ao solicitar recuperação. Verifique o email.')
+    } else {
+      setResetSuccess(true)
+      setTimeout(() => {
+        setIsResetDialogOpen(false)
+        setResetSuccess(false)
+        setResetEmail('')
+      }, 3000)
+    }
+    setResetLoading(false)
   }
 
   return (
@@ -54,7 +91,57 @@ export default function Login() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Senha</Label>
+                <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto text-xs font-normal text-slate-500 hover:text-slate-900"
+                    >
+                      Resetar senha
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Recuperação de Senha</DialogTitle>
+                      <DialogDescription>
+                        Informe seu email para receber um link de redefinição de senha.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleResetPassword} className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Email</Label>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          placeholder="seu@email.com"
+                          required
+                        />
+                      </div>
+                      {resetError && <p className="text-sm text-destructive">{resetError}</p>}
+                      {resetSuccess && (
+                        <p className="text-sm text-emerald-600">
+                          Email de recuperação enviado com sucesso!
+                        </p>
+                      )}
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button type="button" variant="outline" disabled={resetLoading}>
+                            Cancelar
+                          </Button>
+                        </DialogClose>
+                        <Button type="submit" disabled={resetLoading || resetSuccess}>
+                          {resetLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          Enviar
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -70,11 +157,6 @@ export default function Login() {
               Entrar
             </Button>
           </form>
-          <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <p className="text-xs text-slate-500 text-center">
-              Demo: <strong>gil.araujo@repress.com.br</strong> / <strong>Skip@Pass</strong>
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

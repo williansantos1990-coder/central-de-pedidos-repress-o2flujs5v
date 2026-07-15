@@ -6,6 +6,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   signUp: (email: string, password: string) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
+  resetPassword: (email: string) => Promise<{ error: any }>
   signOut: () => void
   loading: boolean
 }
@@ -61,12 +62,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const resetPassword = async (email: string) => {
+    try {
+      await pb.collection('users').requestPasswordReset(email)
+      return { error: null }
+    } catch (error) {
+      return { error }
+    }
+  }
+
   const signOut = () => {
     pb.authStore.clear()
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, signUp, signIn, signOut, loading }}>
+    <AuthContext.Provider
+      value={{ user, isAuthenticated, signUp, signIn, resetPassword, signOut, loading }}
+    >
       {children}
     </AuthContext.Provider>
   )
