@@ -42,6 +42,7 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
     const map = new Map<string, TransportadoraRecord>()
     transportadoras.forEach((t) => {
       if (t.destino) map.set(t.destino.toUpperCase().trim(), t)
+      if (t.padrao_do_exceda) map.set(t.padrao_do_exceda.toUpperCase().trim(), t)
     })
     return map
   }, [transportadoras])
@@ -133,14 +134,14 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
               <TableCell className="text-slate-600 whitespace-nowrap">
                 {formatDate(prevEntr)}
               </TableCell>
-              <TableCell className="text-center font-medium text-slate-700">
-                {p005?.qtd_itens ?? 0}
-              </TableCell>
               <TableCell className="font-medium text-primary bg-primary/5 whitespace-nowrap">
                 {formatDate(dataSep)}
               </TableCell>
               <TableCell className="font-medium text-success bg-success/5 whitespace-nowrap">
                 {formatDate(dataSegura)}
+              </TableCell>
+              <TableCell className="text-center font-medium text-slate-700">
+                {p005?.qtd_itens ?? 0}
               </TableCell>
             </TableRow>
           )

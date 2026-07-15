@@ -28,9 +28,9 @@ const EXPORT_COLUMNS: { key: string; label: string; from: CollectionSource }[] =
   { key: 'emissao', label: 'Emissão', from: 'p012' },
   { key: 'envio_liberacao', label: 'Envio/Liberação', from: 'p012' },
   { key: 'prev_entr', label: 'Prev. Entr.', from: 'p012' },
-  { key: 'qtd_itens', label: 'Qtd Itens', from: 'p005' },
   { key: 'data_sep', label: 'Data Sep.', from: 'calculated' },
   { key: 'data_segura', label: 'Data Segura', from: 'calculated' },
+  { key: 'qtd_itens', label: 'Qtd Itens', from: 'p005' },
 ]
 
 const DATE_FIELDS = new Set(['emissao', 'envio_liberacao', 'prev_entr', 'transmitir_nfe'])

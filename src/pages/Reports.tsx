@@ -60,6 +60,9 @@ export default function Reports() {
   useRealtime('pedve005', () => {
     loadData()
   })
+  useRealtime('transportadoras', () => {
+    loadData()
+  })
 
   if (loading) {
     return (
