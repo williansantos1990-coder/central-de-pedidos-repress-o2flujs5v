@@ -30,6 +30,7 @@ import {
   Cuboid,
   ClipboardCheck,
   FileWarning,
+  CheckCircle2,
 } from 'lucide-react'
 
 function extractDateKey(dateStr: string | null | undefined): string | null {
@@ -126,6 +127,7 @@ export default function Index() {
     () => ({
       receita: filtered005.reduce((s, r) => s + (r.vl_ped_rs || 0), 0),
       pedidos: filtered012.length,
+      finalizados: filtered012.filter((r) => r.transmitir_nfe).length,
       naoFinalizou: filtered012.filter((r) => r.envio_liberacao && !r.transmitir_nfe).length,
       pedidosLiberados: filtered012.filter((r) => r.envio_liberacao).length,
       itens: filtered012.reduce((s, r) => s + (r.nr_itens || 0), 0),
@@ -226,20 +228,20 @@ export default function Index() {
           iconBg="bg-success/10"
         />
         <MetricCard
+          title="Finalizados"
+          value={metrics.finalizados}
+          subtitle="Com transmissão NFe"
+          icon={CheckCircle2}
+          iconColor="text-blue-600"
+          iconBg="bg-blue-100"
+        />
+        <MetricCard
           title="Não Finalizou"
           value={metrics.naoFinalizou}
           subtitle="Liberados sem transmissão NFe"
           icon={FileWarning}
           iconColor="text-orange-600"
           iconBg="bg-orange-100"
-        />
-        <MetricCard
-          title="Itens Processados"
-          value={formatNumber(metrics.itens)}
-          subtitle="Soma de nr_itens (PEDVE012)"
-          icon={Boxes}
-          iconColor="text-amber-600"
-          iconBg="bg-amber-100"
         />
         <MetricCard
           title="Volume Total"
@@ -272,7 +274,8 @@ export default function Index() {
           <li className="text-sm text-slate-700 flex items-start gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-success mt-1.5 shrink-0" />
             <strong>{metrics.pedidos} pedidos</strong> rastreados com{' '}
-            <strong>{formatNumber(metrics.itens)} itens</strong> processados no período.
+            <strong>{metrics.finalizados} finalizados</strong> e{' '}
+            <strong>{metrics.naoFinalizou} não finalizados</strong> no período.
           </li>
           <li className="text-sm text-slate-700 flex items-start gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-success mt-1.5 shrink-0" />
