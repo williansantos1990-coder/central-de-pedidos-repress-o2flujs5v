@@ -125,6 +125,7 @@ export default function Index() {
     () => ({
       receita: filtered005.reduce((s, r) => s + (r.vl_ped_rs || 0), 0),
       pedidos: filtered012.length,
+      pedidosLiberados: filtered012.filter((r) => r.envio_liberacao).length,
       itens: filtered012.reduce((s, r) => s + (r.nr_itens || 0), 0),
       volume: filtered012.reduce((s, r) => s + (r.volume_local_estoque || 0), 0),
       cubagem: filtered012.reduce((s, r) => s + (r.cubagem_local_estoque || 0), 0),
@@ -217,8 +218,7 @@ export default function Index() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <MetricCard
           title="Pedidos Liberados"
-          value={metrics.pedidos}
-          subtitle="Pedidos liberados para entrega"
+          value={metrics.pedidosLiberados}
           icon={ClipboardCheck}
           iconColor="text-success"
           iconBg="bg-success/10"

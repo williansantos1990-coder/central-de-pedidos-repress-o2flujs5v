@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 interface MetricCardProps {
   title: string
   value: string | number
-  subtitle: string
+  subtitle?: string
   icon: LucideIcon
   iconColor?: string
   iconBg?: string
@@ -28,8 +28,8 @@ export function MetricCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-slate-800">{value}</div>
-        <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
+        <div className={cn('text-2xl font-bold text-slate-800', !subtitle && 'py-2')}>{value}</div>
+        {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
       </CardContent>
     </Card>
   )
