@@ -160,45 +160,53 @@ export default function Index() {
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="flex flex-wrap items-center gap-2 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <Select
-          value={selectedDate || 'all'}
-          onValueChange={(v) => setSelectedDate(v === 'all' ? undefined : v)}
-        >
-          <SelectTrigger className="w-[240px] h-9">
-            <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
-            <SelectValue placeholder="Data de Liberação" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Datas</SelectItem>
-            {availableDates.map((dateKey) => (
-              <SelectItem key={dateKey} value={dateKey}>
-                {formatDateLabel(dateKey)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-end gap-2 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+            <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+            Data da Liberação
+          </span>
+          <Select
+            value={selectedDate || 'all'}
+            onValueChange={(v) => setSelectedDate(v === 'all' ? undefined : v)}
+          >
+            <SelectTrigger className="w-[240px] h-9">
+              <SelectValue placeholder="Data da Liberação" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Datas</SelectItem>
+              {availableDates.map((dateKey) => (
+                <SelectItem key={dateKey} value={dateKey}>
+                  {formatDateLabel(dateKey)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {selectedDate && (
           <Button
             variant="ghost"
             onClick={() => setSelectedDate(undefined)}
-            className="h-9 px-3 text-xs"
+            className="h-9 px-3 text-xs mb-0.5"
           >
             Limpar
           </Button>
         )}
-        <Select value={selectedSituacao} onValueChange={setSelectedSituacao}>
-          <SelectTrigger className="w-[180px] h-9">
-            <SelectValue placeholder="Situação" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Situações</SelectItem>
-            <SelectItem value="Normal">Normal</SelectItem>
-            <SelectItem value="Atrasado">Atrasado</SelectItem>
-            <SelectItem value="Gargalo">Gargalo</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="text-sm text-slate-500 font-medium ml-auto">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-700">Situação</span>
+          <Select value={selectedSituacao} onValueChange={setSelectedSituacao}>
+            <SelectTrigger className="w-[180px] h-9">
+              <SelectValue placeholder="Situação" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Situações</SelectItem>
+              <SelectItem value="Normal">Normal</SelectItem>
+              <SelectItem value="Atrasado">Atrasado</SelectItem>
+              <SelectItem value="Gargalo">Gargalo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="text-sm text-slate-500 font-medium ml-auto self-end mb-1">
           Pedidos no período: {filtered012.length}
         </div>
       </div>
