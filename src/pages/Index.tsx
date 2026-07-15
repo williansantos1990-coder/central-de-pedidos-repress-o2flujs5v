@@ -80,15 +80,15 @@ export default function Index() {
       const key = extractDateKey(r.envio_liberacao)
       if (key) dateSet.add(key)
     })
-    return Array.from(dateSet).sort((a, b) => b.localeCompare(a))
+    return Array.from(dateSet).sort((a, b) => a.localeCompare(b))
   }, [pedve012])
 
   useEffect(() => {
     if (!selectedDate && availableDates.length > 0) {
-      setSelectedDate(availableDates[0])
+      setSelectedDate(availableDates[availableDates.length - 1])
     }
     if (selectedDate && availableDates.length > 0 && !availableDates.includes(selectedDate)) {
-      setSelectedDate(availableDates[0])
+      setSelectedDate(availableDates[availableDates.length - 1])
     }
   }, [availableDates, selectedDate])
 
