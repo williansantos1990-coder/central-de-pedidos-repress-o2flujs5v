@@ -225,7 +225,7 @@ export default function Index() {
             }
             setExporting(true)
             try {
-              exportOrdersToCSV({ pedve012: filtered012, pedve005: filtered005 })
+              exportOrdersToCSV({ pedve012: filtered012, pedve005: filtered005, transportadoras })
               toast({
                 title: 'Exportação concluída',
                 description: `${filtered012.length} pedido(s) exportado(s).`,
