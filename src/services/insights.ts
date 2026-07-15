@@ -6,6 +6,8 @@ export interface InsightMetrics {
   naoFinalizou: number
   pedidosUrgentes: number
   liberadosApos11h: number
+  slaAderente: number
+  slaForaDoSLA: number
   slaData: { name: string; value: number }[]
 }
 

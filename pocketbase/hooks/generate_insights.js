@@ -9,6 +9,8 @@ routerAdd(
     const naoFinalizou = body.naoFinalizou || 0
     const pedidosUrgentes = body.pedidosUrgentes || 0
     const liberadosApos11h = body.liberadosApos11h || 0
+    const slaAderente = body.slaAderente || 0
+    const slaForaDoSLA = body.slaForaDoSLA || 0
     const slaData = body.slaData || []
 
     const slaText = slaData
@@ -36,11 +38,18 @@ routerAdd(
       '- Liberados após 11h: ' +
       liberadosApos11h +
       '\n\n' +
-      'Cumprimento de SLA (PEDVE012):\n' +
+      'Cumprimento de SLA (PEDVE012) — Aderência ao prazo da transportadora:\n' +
       slaText +
+      '\n' +
+      '- Aderente (dentro do SLA da transportadora): ' +
+      slaAderente +
+      '\n' +
+      '- Fora do SLA (excedeu o prazo da transportadora): ' +
+      slaForaDoSLA +
       '\n\n' +
       'Gere de 3 a 5 insights concisos e diretos, focados em gargalos operacionais, ' +
-      'prazos de entrega e otimização. Use apenas os dados fornecidos. ' +
+      'prazos de entrega, aderência ao SLA das transportadoras e otimização. ' +
+      'Use apenas os dados fornecidos. ' +
       'Formato: lista com marcadores •.'
 
     try {

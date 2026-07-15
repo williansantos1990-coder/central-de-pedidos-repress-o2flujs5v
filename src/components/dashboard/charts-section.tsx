@@ -23,7 +23,7 @@ const PIE_COLORS = [
 
 interface ChartsSectionProps {
   statusData: { name: string; value: number }[]
-  situacaoData: { name: string; value: number }[]
+  slaData: { name: string; value: number }[]
 }
 
 function EmptyState() {
@@ -34,10 +34,10 @@ function EmptyState() {
   )
 }
 
-export function ChartsSection({ statusData, situacaoData }: ChartsSectionProps) {
-  const totalSituacao = situacaoData.reduce((s, c) => s + c.value, 0)
-  const noPrazo = situacaoData.find((d) => d.name === 'Normal')?.value || 0
-  const slaPercent = totalSituacao > 0 ? Math.round((noPrazo / totalSituacao) * 100) : 0
+export function ChartsSection({ statusData, slaData }: ChartsSectionProps) {
+  const totalSla = slaData.reduce((s, c) => s + c.value, 0)
+  const aderente = slaData.find((d) => d.name === 'Aderente')?.value || 0
+  const slaPercent = totalSla > 0 ? Math.round((aderente / totalSla) * 100) : 0
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -91,12 +91,12 @@ export function ChartsSection({ statusData, situacaoData }: ChartsSectionProps) 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {totalSituacao > 0 ? (
+          {totalSla > 0 ? (
             <ChartContainer config={{}} className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={situacaoData}
+                    data={slaData}
                     cx="50%"
                     cy="50%"
                     innerRadius={70}
@@ -104,7 +104,7 @@ export function ChartsSection({ statusData, situacaoData }: ChartsSectionProps) 
                     paddingAngle={2}
                     dataKey="value"
                   >
-                    {situacaoData.map((_, i) => (
+                    {slaData.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                     <Label
@@ -129,7 +129,7 @@ export function ChartsSection({ statusData, situacaoData }: ChartsSectionProps) 
                                 y={(viewBox.cy || 0) + 20}
                                 className="fill-slate-500 text-xs"
                               >
-                                No Prazo
+                                Aderente
                               </tspan>
                             </text>
                           )
@@ -151,7 +151,7 @@ export function ChartsSection({ statusData, situacaoData }: ChartsSectionProps) 
             <EmptyState />
           )}
           <div className="flex flex-wrap justify-center gap-4 mt-2">
-            {situacaoData.map((s, i) => (
+            {slaData.map((s, i) => (
               <div key={s.name} className="flex items-center gap-2 text-sm text-slate-600">
                 <div
                   className="w-3 h-3 rounded-full"

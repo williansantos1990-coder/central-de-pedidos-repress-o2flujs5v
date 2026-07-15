@@ -2,8 +2,10 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { getAllPedve012, type Pedve012Record } from '@/services/pedve012'
 import { getAllPedve005, type Pedve005Record } from '@/services/pedve005'
+import { getAllTransportadoras, type TransportadoraRecord } from '@/services/transportadoras'
 import { InsightsSection } from '@/components/dashboard/insights-section'
 import { parsePBDate } from '@/lib/order-utils'
+import { calculateSLAAdherence } from '@/lib/sla-utils'
 import { MetricCard } from '@/components/dashboard/metric-card'
 import { ChartsSection } from '@/components/dashboard/charts-section'
 import { TipoEntregaFilter } from '@/components/dashboard/tipo-entrega-filter'
@@ -49,6 +51,7 @@ function formatDateLabel(dateKey: string): string {
 export default function Index() {
   const [pedve012, setPedve012] = useState<Pedve012Record[]>([])
   const [pedve005, setPedve005] = useState<Pedve005Record[]>([])
+  const [transportadoras, setTransportadoras] = useState<TransportadoraRecord[]>([])
 
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<string | undefined>()
@@ -56,9 +59,14 @@ export default function Index() {
 
   const loadData = useCallback(async () => {
     try {
-      const [p012, p005] = await Promise.all([getAllPedve012(), getAllPedve005()])
+      const [p012, p005, transp] = await Promise.all([
+        getAllPedve012(),
+        getAllPedve005(),
+        getAllTransportadoras(),
+      ])
       setPedve012(p012)
       setPedve005(p005)
+      setTransportadoras(transp)
     } catch {
       /* intentionally ignored */
     } finally {
@@ -71,6 +79,7 @@ export default function Index() {
   }, [loadData])
   useRealtime('pedve012', () => loadData())
   useRealtime('pedve005', () => loadData())
+  useRealtime('transportadoras', () => loadData())
 
   const availableDates = useMemo(() => {
     const dateSet = new Set<string>()
@@ -149,13 +158,10 @@ export default function Index() {
     return Object.entries(c).map(([name, value]) => ({ name, value }))
   }, [filtered005])
 
-  const situacaoData = useMemo(() => {
-    const c: Record<string, number> = {}
-    filtered012.forEach((r) => {
-      if (r.situacao) c[r.situacao] = (c[r.situacao] || 0) + 1
-    })
-    return Object.entries(c).map(([name, value]) => ({ name, value }))
-  }, [filtered012])
+  const slaResult = useMemo(
+    () => calculateSLAAdherence(filtered012, filtered005, transportadoras),
+    [filtered012, filtered005, transportadoras],
+  )
 
   if (loading) {
     return (
@@ -251,7 +257,7 @@ export default function Index() {
         />
       </div>
 
-      <ChartsSection statusData={statusData} situacaoData={situacaoData} />
+      <ChartsSection statusData={statusData} slaData={slaResult.slaData} />
       <GeographySection records={filtered012} />
 
       <InsightsSection
@@ -261,7 +267,9 @@ export default function Index() {
           naoFinalizou: metrics.naoFinalizou,
           pedidosUrgentes: metrics.urgentes,
           liberadosApos11h: metrics.liberadosApos11h,
-          slaData: situacaoData,
+          slaAderente: slaResult.aderente,
+          slaForaDoSLA: slaResult.foraDoSLA,
+          slaData: slaResult.slaData,
         }}
       />
     </div>
