@@ -19,7 +19,7 @@ const EXPORT_COLUMNS: { key: string; label: string; from: CollectionSource }[] =
   { key: 'qtd_itens', label: 'Qtd. Itens', from: 'p005' },
   { key: 'cliente', label: 'Cliente', from: 'p012' },
   { key: 'uf', label: 'UF', from: 'p012' },
-  { key: 'cidade', label: 'Cidade', from: 'p012' },
+  { key: 'cidade', label: 'Cidade', from: 'p005' },
   { key: 'bairro', label: 'Bairro', from: 'p012' },
   { key: 'tipo_entrega', label: 'Tipo de Entrega', from: 'p012' },
   { key: 'emissao', label: 'Emissão', from: 'p012' },
@@ -74,10 +74,14 @@ export function exportOrdersToCSV({ pedve012, pedve005, transportadoras }: Expor
     if (r.pedido) p005Map.set(r.pedido, r)
   })
 
-  const transpMap = new Map<string, TransportadoraRecord>()
+  const transpByDestino = new Map<string, TransportadoraRecord>()
+  const transpByPadrao = new Map<string, TransportadoraRecord>()
   transportadoras.forEach((t) => {
+    if (t.destino) {
+      transpByDestino.set(t.destino.toUpperCase().trim(), t)
+    }
     if (t.padrao_do_exceda) {
-      transpMap.set(t.padrao_do_exceda.toUpperCase().trim(), t)
+      transpByPadrao.set(t.padrao_do_exceda.toUpperCase().trim(), t)
     }
   })
 
@@ -86,8 +90,8 @@ export function exportOrdersToCSV({ pedve012, pedve005, transportadoras }: Expor
 
   for (const p012 of pedve012) {
     const p005 = p005Map.get(p012.pedido)
-    const cidadeKey = (p012.cidade || p005?.cidade || '').toUpperCase().trim()
-    const transp = transpMap.get(cidadeKey)
+    const cidadeKey = (p005?.cidade || '').toUpperCase().trim()
+    const transp = transpByDestino.get(cidadeKey) || transpByPadrao.get(cidadeKey)
 
     const sourceMap: Record<CollectionSource, Record<string, unknown> | undefined> = {
       p012: p012 as unknown as Record<string, unknown>,
