@@ -10,8 +10,6 @@ import { GeographySection } from '@/components/dashboard/geography-section'
 import { LogisticsSection } from '@/components/dashboard/logistics-section'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Select,
   SelectTrigger,
@@ -19,7 +17,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import { format, isSameDay } from 'date-fns'
+import { format } from 'date-fns'
 import {
   Package,
   DollarSign,
@@ -31,12 +29,25 @@ import {
   Cuboid,
 } from 'lucide-react'
 
+function extractDateKey(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null
+  const d = parsePBDate(dateStr)
+  if (!d) return null
+  return format(d, 'yyyy-MM-dd')
+}
+
+function formatDateLabel(dateKey: string): string {
+  const d = parsePBDate(dateKey)
+  if (!d) return dateKey
+  return format(d, 'dd/MM/yyyy')
+}
+
 export default function Index() {
   const [pedve012, setPedve012] = useState<Pedve012Record[]>([])
   const [pedve005, setPedve005] = useState<Pedve005Record[]>([])
   const [transportadoras, setTransportadoras] = useState<TransportadoraRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>()
+  const [selectedDate, setSelectedDate] = useState<string | undefined>()
   const [selectedSituacao, setSelectedSituacao] = useState('all')
 
   const loadData = useCallback(async () => {
@@ -63,24 +74,40 @@ export default function Index() {
   useRealtime('pedve005', () => loadData())
   useRealtime('transportadoras', () => loadData())
 
+  const availableDates = useMemo(() => {
+    const dateSet = new Set<string>()
+    pedve012.forEach((r) => {
+      const key = extractDateKey(r.envio_liberacao)
+      if (key) dateSet.add(key)
+    })
+    return Array.from(dateSet).sort((a, b) => b.localeCompare(a))
+  }, [pedve012])
+
+  useEffect(() => {
+    if (!selectedDate && availableDates.length > 0) {
+      setSelectedDate(availableDates[0])
+    }
+    if (selectedDate && availableDates.length > 0 && !availableDates.includes(selectedDate)) {
+      setSelectedDate(availableDates[0])
+    }
+  }, [availableDates, selectedDate])
+
   const filtered012 = useMemo(() => {
     let r = pedve012
-    if (selectedDate)
-      r = r.filter((o) => {
-        const d = parsePBDate(o.emissao)
-        return d && isSameDay(d, selectedDate)
-      })
+    if (selectedDate) {
+      r = r.filter((o) => extractDateKey(o.envio_liberacao) === selectedDate)
+    }
     if (selectedSituacao !== 'all') r = r.filter((o) => o.situacao === selectedSituacao)
     return r
   }, [pedve012, selectedDate, selectedSituacao])
 
+  const filteredPedidos = useMemo(() => {
+    return new Set(filtered012.map((p) => p.pedido))
+  }, [filtered012])
+
   const filtered005 = useMemo(() => {
-    if (!selectedDate) return pedve005
-    return pedve005.filter((o) => {
-      const d = parsePBDate(o.emissao)
-      return d && isSameDay(d, selectedDate)
-    })
-  }, [pedve005, selectedDate])
+    return pedve005.filter((o) => filteredPedidos.has(o.pedido))
+  }, [pedve005, filteredPedidos])
 
   const metrics = useMemo(
     () => ({
@@ -111,17 +138,17 @@ export default function Index() {
 
   const timeData = useMemo(() => {
     const c: Record<string, number> = {}
-    filtered005.forEach((r) => {
-      const d = parsePBDate(r.emissao)
-      if (d) {
-        const k = format(d, 'MM/yyyy')
-        c[k] = (c[k] || 0) + 1
+    pedve012.forEach((r) => {
+      const key = extractDateKey(r.envio_liberacao)
+      if (key) {
+        const monthKey = key.substring(0, 7)
+        c[monthKey] = (c[monthKey] || 0) + 1
       }
     })
     return Object.entries(c)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [filtered005])
+  }, [pedve012])
 
   if (loading) {
     return (
@@ -134,28 +161,23 @@ export default function Index() {
   return (
     <div className="space-y-6 pb-8">
       <div className="flex flex-wrap items-center gap-2 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                'w-[240px] justify-start text-left font-normal',
-                !selectedDate && 'text-slate-500',
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : <span>Período Completo</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <Select
+          value={selectedDate || 'all'}
+          onValueChange={(v) => setSelectedDate(v === 'all' ? undefined : v)}
+        >
+          <SelectTrigger className="w-[240px] h-9">
+            <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
+            <SelectValue placeholder="Data de Liberação" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as Datas</SelectItem>
+            {availableDates.map((dateKey) => (
+              <SelectItem key={dateKey} value={dateKey}>
+                {formatDateLabel(dateKey)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {selectedDate && (
           <Button
             variant="ghost"
@@ -258,6 +280,12 @@ export default function Index() {
                 {situacaoData.find((s) => s.name === 'Gargalo')?.value} pedidos em gargalo
               </strong>{' '}
               operacional identificados.
+            </li>
+          )}
+          {selectedDate && (
+            <li className="text-sm text-slate-700 flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+              Filtrando por data de liberação: <strong>{formatDateLabel(selectedDate)}</strong>
             </li>
           )}
         </ul>
