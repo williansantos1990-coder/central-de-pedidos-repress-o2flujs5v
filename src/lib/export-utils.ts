@@ -112,3 +112,53 @@ export function exportOrdersToCSV({ pedve012, pedve005, transportadoras }: Expor
   const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
   triggerDownload(csv, `pedidos_repress_${dateStr}.csv`)
 }
+
+const PEDVE005_EXPORT_COLUMNS: { key: string; label: string }[] = [
+  { key: 'pedido', label: 'Pedido' },
+  { key: 'cliente', label: 'Cliente' },
+  { key: 'status', label: 'Status' },
+  { key: 'cidade', label: 'Cidade' },
+  { key: 'bairro', label: 'Bairro' },
+  { key: 'tp_entrega', label: 'Tipo de Entrega' },
+  { key: 'emissao', label: 'Emissão' },
+  { key: 'prev_entr', label: 'Previsão de Entrega' },
+  { key: 'vl_ped_rs', label: 'Valor (R$)' },
+  { key: 'qtd_itens', label: 'Qtd. Itens' },
+]
+
+export function exportPedve005ToCSV(records: Pedve005Record[]) {
+  const header = PEDVE005_EXPORT_COLUMNS.map((c) => escapeCsvCell(c.label)).join(';')
+  const rows = records.map((r) => {
+    const source = r as unknown as Record<string, unknown>
+    return PEDVE005_EXPORT_COLUMNS.map((c) =>
+      escapeCsvCell(formatFieldValue(c.key, source[c.key])),
+    ).join(';')
+  })
+  const csv = [header, ...rows].join('\r\n')
+  const now = new Date()
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+  triggerDownload(csv, `pedidos_sinteticos_${dateStr}.csv`)
+}
+
+const TRANSPORTADORAS_EXPORT_COLUMNS: { key: string; label: string }[] = [
+  { key: 'destino', label: 'Destino' },
+  { key: 'uf', label: 'UF' },
+  { key: 'transportadora', label: 'Transportadora' },
+  { key: 'padrao_do_exceda', label: 'Padrão do Exceda' },
+  { key: 'prazo_de_entrega', label: 'Prazo de Entrega (dias)' },
+  { key: 'prazo_transportadora', label: 'Prazo Transportadora' },
+]
+
+export function exportTransportadorasToCSV(records: TransportadoraRecord[]) {
+  const header = TRANSPORTADORAS_EXPORT_COLUMNS.map((c) => escapeCsvCell(c.label)).join(';')
+  const rows = records.map((r) => {
+    const source = r as unknown as Record<string, unknown>
+    return TRANSPORTADORAS_EXPORT_COLUMNS.map((c) =>
+      escapeCsvCell(formatFieldValue(c.key, source[c.key])),
+    ).join(';')
+  })
+  const csv = [header, ...rows].join('\r\n')
+  const now = new Date()
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+  triggerDownload(csv, `transportadoras_${dateStr}.csv`)
+}
