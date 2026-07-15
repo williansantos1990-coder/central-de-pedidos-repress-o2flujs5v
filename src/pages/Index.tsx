@@ -177,13 +177,7 @@ export default function Index() {
           options={availableTipos}
           selected={selectedTipos}
           onChange={setSelectedTipos}
-        />
-        <CascadingFilter
-          label="Situação"
-          placeholder="Todas as Situações"
-          options={availableSituacoes}
-          selected={selectedSituacoes}
-          onChange={setSelectedSituacoes}
+          selectAllLabel="Todos os Tipos"
         />
         <CascadingFilter
           label="Cidade"

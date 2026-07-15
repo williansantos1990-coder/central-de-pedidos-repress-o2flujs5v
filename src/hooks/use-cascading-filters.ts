@@ -5,15 +5,12 @@ import { extractDateKey } from '@/lib/order-utils'
 export interface CascadingFiltersResult {
   selectedDate: string | undefined
   selectedTipos: string[]
-  selectedSituacoes: string[]
   selectedCidades: string[]
   availableDates: string[]
   availableTipos: string[]
-  availableSituacoes: string[]
   availableCidades: string[]
   setSelectedDate: (d: string | undefined) => void
   setSelectedTipos: (t: string[]) => void
-  setSelectedSituacoes: (s: string[]) => void
   setSelectedCidades: (c: string[]) => void
   clearAll: () => void
   filteredRecords: Pedve012Record[]
@@ -23,7 +20,6 @@ export interface CascadingFiltersResult {
 export function useCascadingFilters(records: Pedve012Record[]): CascadingFiltersResult {
   const [selectedDate, setSelectedDate] = useState<string | undefined>()
   const [selectedTipos, setSelectedTipos] = useState<string[]>([])
-  const [selectedSituacoes, setSelectedSituacoes] = useState<string[]>([])
   const [selectedCidades, setSelectedCidades] = useState<string[]>([])
 
   const applyFiltersExcept = useCallback(
@@ -35,15 +31,12 @@ export function useCascadingFilters(records: Pedve012Record[]): CascadingFilters
         if (exclude !== 'tipos' && selectedTipos.length > 0) {
           if (!selectedTipos.includes(r.tipo_entrega || '')) return false
         }
-        if (exclude !== 'situacao' && selectedSituacoes.length > 0) {
-          if (!selectedSituacoes.includes(r.situacao || '')) return false
-        }
         if (exclude !== 'cidades' && selectedCidades.length > 0) {
           if (!selectedCidades.includes(r.cidade || '')) return false
         }
         return true
       }),
-    [records, selectedDate, selectedTipos, selectedSituacoes, selectedCidades],
+    [records, selectedDate, selectedTipos, selectedCidades],
   )
 
   const availableDates = useMemo(() => {
@@ -59,14 +52,6 @@ export function useCascadingFilters(records: Pedve012Record[]): CascadingFilters
     const set = new Set<string>()
     applyFiltersExcept('tipos').forEach((r) => {
       if (r.tipo_entrega) set.add(r.tipo_entrega)
-    })
-    return Array.from(set).sort((a, b) => a.localeCompare(b))
-  }, [applyFiltersExcept])
-
-  const availableSituacoes = useMemo(() => {
-    const set = new Set<string>()
-    applyFiltersExcept('situacao').forEach((r) => {
-      if (r.situacao) set.add(r.situacao)
     })
     return Array.from(set).sort((a, b) => a.localeCompare(b))
   }, [applyFiltersExcept])
@@ -103,44 +88,29 @@ export function useCascadingFilters(records: Pedve012Record[]): CascadingFilters
   }, [availableTipos, selectedTipos])
 
   useEffect(() => {
-    if (selectedSituacoes.length > 0) {
-      const valid = selectedSituacoes.filter((s) => availableSituacoes.includes(s))
-      if (valid.length !== selectedSituacoes.length) setSelectedSituacoes(valid)
-    }
-  }, [availableSituacoes, selectedSituacoes])
-
-  useEffect(() => {
     if (selectedCidades.length > 0) {
       const valid = selectedCidades.filter((c) => availableCidades.includes(c))
       if (valid.length !== selectedCidades.length) setSelectedCidades(valid)
     }
   }, [availableCidades, selectedCidades])
 
-  const hasActiveFilters =
-    !!selectedDate ||
-    selectedTipos.length > 0 ||
-    selectedSituacoes.length > 0 ||
-    selectedCidades.length > 0
+  const hasActiveFilters = !!selectedDate || selectedTipos.length > 0 || selectedCidades.length > 0
 
   const clearAll = useCallback(() => {
     setSelectedDate(undefined)
     setSelectedTipos([])
-    setSelectedSituacoes([])
     setSelectedCidades([])
   }, [])
 
   return {
     selectedDate,
     selectedTipos,
-    selectedSituacoes,
     selectedCidades,
     availableDates,
     availableTipos,
-    availableSituacoes,
     availableCidades,
     setSelectedDate,
     setSelectedTipos,
-    setSelectedSituacoes,
     setSelectedCidades,
     clearAll,
     filteredRecords,

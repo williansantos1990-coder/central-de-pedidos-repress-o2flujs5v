@@ -9,6 +9,7 @@ import {
   CommandGroup,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from '@/components/ui/command'
 
 interface CascadingFilterProps {
@@ -19,6 +20,7 @@ interface CascadingFilterProps {
   onChange: (selected: string[]) => void
   emptyMessage?: string
   width?: string
+  selectAllLabel?: string
 }
 
 export function CascadingFilter({
@@ -29,15 +31,26 @@ export function CascadingFilter({
   onChange,
   emptyMessage = 'Nenhuma opção disponível',
   width = 'w-[220px]',
+  selectAllLabel,
 }: CascadingFilterProps) {
   const [open, setOpen] = useState(false)
   const noOptions = options.length === 0
+
+  const allSelected = options.length > 0 && options.every((opt) => selected.includes(opt))
 
   const toggle = (value: string) => {
     if (selected.includes(value)) {
       onChange(selected.filter((v) => v !== value))
     } else {
       onChange([...selected, value])
+    }
+  }
+
+  const toggleAll = () => {
+    if (allSelected) {
+      onChange([])
+    } else {
+      onChange([...options])
     }
   }
 
@@ -73,6 +86,15 @@ export function CascadingFilter({
               <CommandList>
                 <CommandEmpty>{emptyMessage}</CommandEmpty>
                 <CommandGroup>
+                  {selectAllLabel && options.length > 0 && (
+                    <CommandItem onSelect={toggleAll}>
+                      <Check
+                        className={cn('mr-2 h-4 w-4', allSelected ? 'opacity-100' : 'opacity-0')}
+                      />
+                      <span className="font-medium">{selectAllLabel}</span>
+                    </CommandItem>
+                  )}
+                  {selectAllLabel && options.length > 0 && <CommandSeparator />}
                   {options.map((option) => (
                     <CommandItem key={option} value={option} onSelect={() => toggle(option)}>
                       <Check
