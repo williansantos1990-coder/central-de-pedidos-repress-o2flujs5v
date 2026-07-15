@@ -9,7 +9,7 @@ function escapeXml(s: string): string {
     .replace(/'/g, '&apos;')
 }
 
-function colToLetter(col: number): string {
+export function colToLetter(col: number): string {
   let result = ''
   while (col > 0) {
     const mod = (col - 1) % 26
