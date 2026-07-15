@@ -2,13 +2,13 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { getAllPedve012, type Pedve012Record } from '@/services/pedve012'
 import { getAllPedve005, type Pedve005Record } from '@/services/pedve005'
-import { getAllTransportadoras, type TransportadoraRecord } from '@/services/transportadoras'
-import { parsePBDate, formatCurrency, formatNumber } from '@/lib/order-utils'
+import { InsightsSection } from '@/components/dashboard/insights-section'
+import { parsePBDate } from '@/lib/order-utils'
 import { MetricCard } from '@/components/dashboard/metric-card'
 import { ChartsSection } from '@/components/dashboard/charts-section'
 import { TipoEntregaFilter } from '@/components/dashboard/tipo-entrega-filter'
 import { GeographySection } from '@/components/dashboard/geography-section'
-import { LogisticsSection } from '@/components/dashboard/logistics-section'
+import { generateInsights } from '@/services/insights'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,7 +24,6 @@ import {
   DollarSign,
   Boxes,
   Ruler,
-  Info,
   Calendar as CalendarIcon,
   Loader2,
   Clock,
@@ -50,21 +49,16 @@ function formatDateLabel(dateKey: string): string {
 export default function Index() {
   const [pedve012, setPedve012] = useState<Pedve012Record[]>([])
   const [pedve005, setPedve005] = useState<Pedve005Record[]>([])
-  const [transportadoras, setTransportadoras] = useState<TransportadoraRecord[]>([])
+
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<string | undefined>()
   const [selectedTipos, setSelectedTipos] = useState<string[]>([])
 
   const loadData = useCallback(async () => {
     try {
-      const [p012, p005, transp] = await Promise.all([
-        getAllPedve012(),
-        getAllPedve005(),
-        getAllTransportadoras(),
-      ])
+      const [p012, p005] = await Promise.all([getAllPedve012(), getAllPedve005()])
       setPedve012(p012)
       setPedve005(p005)
-      setTransportadoras(transp)
     } catch {
       /* intentionally ignored */
     } finally {
@@ -77,7 +71,6 @@ export default function Index() {
   }, [loadData])
   useRealtime('pedve012', () => loadData())
   useRealtime('pedve005', () => loadData())
-  useRealtime('transportadoras', () => loadData())
 
   const availableDates = useMemo(() => {
     const dateSet = new Set<string>()
@@ -163,20 +156,6 @@ export default function Index() {
     })
     return Object.entries(c).map(([name, value]) => ({ name, value }))
   }, [filtered012])
-
-  const timeData = useMemo(() => {
-    const c: Record<string, number> = {}
-    pedve012.forEach((r) => {
-      const key = extractDateKey(r.envio_liberacao)
-      if (key) {
-        const monthKey = key.substring(0, 7)
-        c[monthKey] = (c[monthKey] || 0) + 1
-      }
-    })
-    return Object.entries(c)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [pedve012])
 
   if (loading) {
     return (
@@ -272,53 +251,19 @@ export default function Index() {
         />
       </div>
 
-      <ChartsSection statusData={statusData} situacaoData={situacaoData} timeData={timeData} />
+      <ChartsSection statusData={statusData} situacaoData={situacaoData} />
       <GeographySection records={filtered012} />
-      <LogisticsSection transportadoras={transportadoras} pedve012={filtered012} />
 
-      <div className="bg-primary/5 border border-primary/10 rounded-xl p-5 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-        <h3 className="text-sm font-bold text-primary flex items-center gap-2 mb-3">
-          <Info className="w-4 h-4" /> Insights Automáticos
-        </h3>
-        <ul className="space-y-2">
-          <li className="text-sm text-slate-700 flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-success mt-1.5 shrink-0" />
-            <strong>{metrics.pedidos} pedidos</strong> rastreados com{' '}
-            <strong>{metrics.finalizados} finalizados</strong> e{' '}
-            <strong>{metrics.naoFinalizou} não finalizados</strong> no período.
-          </li>
-          <li className="text-sm text-slate-700 flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-success mt-1.5 shrink-0" />
-            Receita total de <strong>{formatCurrency(metrics.receita)}</strong> no período
-            selecionado.
-          </li>
-          {situacaoData.find((s) => s.name === 'Atrasado') && (
-            <li className="text-sm text-slate-700 flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-1.5 shrink-0" />
-              <strong>
-                {situacaoData.find((s) => s.name === 'Atrasado')?.value} pedidos atrasados
-              </strong>{' '}
-              que exigem atenção imediata.
-            </li>
-          )}
-          {situacaoData.find((s) => s.name === 'Gargalo') && (
-            <li className="text-sm text-slate-700 flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-              <strong>
-                {situacaoData.find((s) => s.name === 'Gargalo')?.value} pedidos em gargalo
-              </strong>{' '}
-              operacional identificados.
-            </li>
-          )}
-          {selectedDate && (
-            <li className="text-sm text-slate-700 flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-              Filtrando por data de liberação: <strong>{formatDateLabel(selectedDate)}</strong>
-            </li>
-          )}
-        </ul>
-      </div>
+      <InsightsSection
+        metrics={{
+          pedidosLiberados: metrics.pedidosLiberados,
+          finalizados: metrics.finalizados,
+          naoFinalizou: metrics.naoFinalizou,
+          pedidosUrgentes: metrics.urgentes,
+          liberadosApos11h: metrics.liberadosApos11h,
+          slaData: situacaoData,
+        }}
+      />
     </div>
   )
 }

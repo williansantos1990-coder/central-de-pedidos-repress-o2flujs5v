@@ -24,7 +24,6 @@ const PIE_COLORS = [
 interface ChartsSectionProps {
   statusData: { name: string; value: number }[]
   situacaoData: { name: string; value: number }[]
-  timeData: { name: string; value: number }[]
 }
 
 function EmptyState() {
@@ -35,7 +34,7 @@ function EmptyState() {
   )
 }
 
-export function ChartsSection({ statusData, situacaoData, timeData }: ChartsSectionProps) {
+export function ChartsSection({ statusData, situacaoData }: ChartsSectionProps) {
   const totalSituacao = situacaoData.reduce((s, c) => s + c.value, 0)
   const noPrazo = situacaoData.find((d) => d.name === 'Normal')?.value || 0
   const slaPercent = totalSituacao > 0 ? Math.round((noPrazo / totalSituacao) * 100) : 0
@@ -164,46 +163,6 @@ export function ChartsSection({ statusData, situacaoData, timeData }: ChartsSect
           </div>
         </CardContent>
       </Card>
-
-      {timeData.length > 0 && (
-        <Card className="shadow-subtle border-slate-200/60 lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold text-slate-800">
-              Análise Temporal (Emissão de Pedidos)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{ value: { color: 'hsl(var(--primary))' } }}
-              className="h-[280px] w-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={timeData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                  <XAxis
-                    dataKey="name"
-                    stroke="#94a3b8"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-                    content={<ChartTooltipContent />}
-                  />
-                  <Bar
-                    dataKey="value"
-                    name="Pedidos"
-                    fill="var(--color-value)"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={60}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
