@@ -22,10 +22,6 @@ import {
 } from '@/components/ui/select'
 import { format } from 'date-fns'
 import {
-  Package,
-  DollarSign,
-  Boxes,
-  Ruler,
   Calendar as CalendarIcon,
   Loader2,
   Clock,
@@ -33,7 +29,10 @@ import {
   FileWarning,
   CheckCircle2,
   Flame,
+  Download,
 } from 'lucide-react'
+import { exportOrdersToCSV } from '@/lib/export-utils'
+import { useToast } from '@/hooks/use-toast'
 
 function extractDateKey(dateStr: string | null | undefined): string | null {
   if (!dateStr) return null
@@ -56,6 +55,8 @@ export default function Index() {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<string | undefined>()
   const [selectedTipos, setSelectedTipos] = useState<string[]>([])
+  const [exporting, setExporting] = useState(false)
+  const { toast } = useToast()
 
   const loadData = useCallback(async () => {
     try {
@@ -213,6 +214,41 @@ export default function Index() {
         <div className="text-sm text-slate-500 font-medium ml-auto self-end mb-1">
           Pedidos no período: {filtered012.length}
         </div>
+        <Button
+          onClick={() => {
+            if (filtered012.length === 0) {
+              toast({
+                title: 'Nenhum pedido para exportar',
+                description: 'Ajuste os filtros para incluir registros.',
+              })
+              return
+            }
+            setExporting(true)
+            try {
+              exportOrdersToCSV({ pedve012: filtered012, pedve005: filtered005 })
+              toast({
+                title: 'Exportação concluída',
+                description: `${filtered012.length} pedido(s) exportado(s).`,
+              })
+            } catch {
+              toast({
+                title: 'Erro na exportação',
+                description: 'Não foi possível gerar o arquivo.',
+              })
+            } finally {
+              setExporting(false)
+            }
+          }}
+          disabled={exporting || filtered012.length === 0}
+          className="h-9 mb-0.5 gap-2"
+        >
+          {exporting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          Exportar Dados
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
