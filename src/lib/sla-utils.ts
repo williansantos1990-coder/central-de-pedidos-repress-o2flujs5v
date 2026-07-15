@@ -54,7 +54,7 @@ export function calculateSLAAdherence(
 
     const diffDays = differenceInCalendarDays(prevEntr, envio)
 
-    if (diffDays <= prazo) {
+    if (diffDays >= prazo) {
       aderente++
     } else {
       foraDoSLA++
@@ -63,9 +63,13 @@ export function calculateSLAAdherence(
 
   const total = aderente + foraDoSLA
   const slaData = [
-    { name: 'Aderente', value: aderente },
+    { name: 'Dentro do SLA', value: aderente },
     { name: 'Fora do SLA', value: foraDoSLA },
   ]
+
+  if (semTransportadora > 0) {
+    slaData.push({ name: 'SLA não definido', value: semTransportadora })
+  }
 
   return { aderente, foraDoSLA, semTransportadora, total, slaData }
 }

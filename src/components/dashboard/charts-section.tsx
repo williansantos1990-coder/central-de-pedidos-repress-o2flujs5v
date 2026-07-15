@@ -16,7 +16,7 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 const PIE_COLORS = [
   'hsl(var(--success))',
   'hsl(var(--destructive))',
-  'hsl(var(--primary))',
+  'hsl(201 94% 56%)',
   'hsl(45 95% 50%)',
   'hsl(280 65% 60%)',
 ]
@@ -36,8 +36,10 @@ function EmptyState() {
 
 export function ChartsSection({ statusData, slaData }: ChartsSectionProps) {
   const totalSla = slaData.reduce((s, c) => s + c.value, 0)
-  const aderente = slaData.find((d) => d.name === 'Aderente')?.value || 0
-  const slaPercent = totalSla > 0 ? Math.round((aderente / totalSla) * 100) : 0
+  const aderente = slaData.find((d) => d.name === 'Dentro do SLA')?.value || 0
+  const foraSla = slaData.find((d) => d.name === 'Fora do SLA')?.value || 0
+  const slaCompliantTotal = aderente + foraSla
+  const slaPercent = slaCompliantTotal > 0 ? Math.round((aderente / slaCompliantTotal) * 100) : 0
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
