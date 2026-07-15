@@ -27,7 +27,7 @@ import {
   Info,
   Calendar as CalendarIcon,
   Loader2,
-  Cuboid,
+  Clock,
   ClipboardCheck,
   FileWarning,
   CheckCircle2,
@@ -133,7 +133,11 @@ export default function Index() {
       pedidosLiberados: filtered012.filter((r) => r.envio_liberacao).length,
       itens: filtered012.reduce((s, r) => s + (r.nr_itens || 0), 0),
       volume: filtered012.reduce((s, r) => s + (r.volume_local_estoque || 0), 0),
-      cubagem: filtered012.reduce((s, r) => s + (r.cubagem_local_estoque || 0), 0),
+      liberadosApos11h: filtered012.filter((r) => {
+        const d = parsePBDate(r.envio_liberacao)
+        if (!d) return false
+        return d.getUTCHours() >= 11
+      }).length,
       urgentes: filtered012.filter((r) => {
         const envioKey = extractDateKey(r.envio_liberacao)
         const prevKey = extractDateKey(r.prev_entr)
@@ -259,10 +263,10 @@ export default function Index() {
           iconBg="bg-red-100"
         />
         <MetricCard
-          title="Cubagem Total"
-          value={formatNumber(metrics.cubagem)}
-          subtitle="Soma de cubagem_local_estoque"
-          icon={Cuboid}
+          title="Liberados após 11h"
+          value={metrics.liberadosApos11h}
+          subtitle="Liberação a partir das 11:00"
+          icon={Clock}
           iconColor="text-purple-600"
           iconBg="bg-purple-100"
         />
