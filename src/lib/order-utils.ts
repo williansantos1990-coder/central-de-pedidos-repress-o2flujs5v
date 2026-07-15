@@ -7,6 +7,13 @@ export function parsePBDate(dateStr: string | null | undefined): Date | null {
   return isNaN(d.getTime()) ? null : d
 }
 
+export function extractDateKey(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null
+  const d = parsePBDate(dateStr)
+  if (!d) return null
+  return format(d, 'yyyy-MM-dd')
+}
+
 export function formatDate(date: Date | null | undefined): string {
   if (!date) return '-'
   return format(date, 'dd/MM/yyyy')
