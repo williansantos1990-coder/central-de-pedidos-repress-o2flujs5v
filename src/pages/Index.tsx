@@ -29,6 +29,7 @@ import {
   Loader2,
   Cuboid,
   ClipboardCheck,
+  FileWarning,
 } from 'lucide-react'
 
 function extractDateKey(dateStr: string | null | undefined): string | null {
@@ -125,6 +126,7 @@ export default function Index() {
     () => ({
       receita: filtered005.reduce((s, r) => s + (r.vl_ped_rs || 0), 0),
       pedidos: filtered012.length,
+      naoFinalizou: filtered012.filter((r) => r.envio_liberacao && !r.transmitir_nfe).length,
       pedidosLiberados: filtered012.filter((r) => r.envio_liberacao).length,
       itens: filtered012.reduce((s, r) => s + (r.nr_itens || 0), 0),
       volume: filtered012.reduce((s, r) => s + (r.volume_local_estoque || 0), 0),
@@ -224,10 +226,12 @@ export default function Index() {
           iconBg="bg-success/10"
         />
         <MetricCard
-          title="Total de Pedidos"
-          value={metrics.pedidos}
-          subtitle="Registros em PEDVE012"
-          icon={Package}
+          title="Não Finalizou"
+          value={metrics.naoFinalizou}
+          subtitle="Liberados sem transmissão NFe"
+          icon={FileWarning}
+          iconColor="text-orange-600"
+          iconBg="bg-orange-100"
         />
         <MetricCard
           title="Itens Processados"
