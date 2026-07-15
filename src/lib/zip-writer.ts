@@ -49,7 +49,7 @@ export function createZip(files: ZipFile[]): Uint8Array {
     pushU16(localHeader, 0)
     pushU16(localHeader, 0)
     pushU16(localHeader, 0)
-    pushU16(localHeader, 0x0021)
+    pushU16(localHeader, 0x0800)
     pushU32(localHeader, crc)
     pushU32(localHeader, file.data.length)
     pushU32(localHeader, file.data.length)
@@ -73,7 +73,7 @@ export function createZip(files: ZipFile[]): Uint8Array {
     pushU16(cdBytes, 0)
     pushU16(cdBytes, 0)
     pushU16(cdBytes, 0)
-    pushU16(cdBytes, 0x0021)
+    pushU16(cdBytes, 0x0800)
     pushU32(cdBytes, entry.crc)
     pushU32(cdBytes, entry.data.length)
     pushU32(cdBytes, entry.data.length)
@@ -87,6 +87,10 @@ export function createZip(files: ZipFile[]): Uint8Array {
     for (const b of entry.nameBytes) cdBytes.push(b)
   }
 
+  const cdOffset = offset
+
+  for (const b of cdBytes) bodyBytes.push(b)
+
   const cdSize = cdBytes.length
   pushU32(bodyBytes, 0x06054b50)
   pushU16(bodyBytes, 0)
@@ -94,9 +98,8 @@ export function createZip(files: ZipFile[]): Uint8Array {
   pushU16(bodyBytes, files.length)
   pushU16(bodyBytes, files.length)
   pushU32(bodyBytes, cdSize)
-  pushU32(bodyBytes, offset)
+  pushU32(bodyBytes, cdOffset)
   pushU16(bodyBytes, 0)
 
-  for (const b of cdBytes) bodyBytes.push(b)
   return new Uint8Array(bodyBytes)
 }

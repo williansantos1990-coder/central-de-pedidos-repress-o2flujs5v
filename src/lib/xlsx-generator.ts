@@ -26,8 +26,12 @@ export interface XlsxSheetData {
 }
 
 function buildSheetXml(sheet: XlsxSheetData): string {
+  const maxRow = sheet.rows.length
+  const maxCol = sheet.rows.reduce((mx, r) => Math.max(mx, r.length), 0)
+  const dimRef = `A1:${colToLetter(maxCol)}${maxRow}`
   let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
   xml += '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+  xml += `<dimension ref="${dimRef}"/>`
   xml +=
     '<cols><col min="1" max="1" width="8" customWidth="1"/><col min="2" max="16384" width="14" customWidth="1"/></cols>'
   xml += '<sheetData>'
@@ -64,8 +68,17 @@ function buildRels(): string {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`
 }
 
-function buildWorkbook(): string {
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Matriz" sheetId="1" r:id="rId1"/></sheets></workbook>`
+function escapeXmlAttr(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+function buildWorkbook(sheetName: string): string {
+  const name = escapeXmlAttr(sheetName || 'Sheet1')
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${name}" sheetId="1" r:id="rId1"/></sheets></workbook>`
 }
 
 function buildWorkbookRels(): string {
@@ -77,7 +90,7 @@ export function generateXlsx(sheets: XlsxSheetData[]): Uint8Array {
   const files = [
     { name: '[Content_Types].xml', data: encoder.encode(buildContentTypes()) },
     { name: '_rels/.rels', data: encoder.encode(buildRels()) },
-    { name: 'xl/workbook.xml', data: encoder.encode(buildWorkbook()) },
+    { name: 'xl/workbook.xml', data: encoder.encode(buildWorkbook(sheets[0].name)) },
     { name: 'xl/_rels/workbook.xml.rels', data: encoder.encode(buildWorkbookRels()) },
     { name: 'xl/worksheets/sheet1.xml', data: encoder.encode(buildSheetXml(sheets[0])) },
   ]

@@ -57,6 +57,5 @@ export function exportPerformanceMatrixToXlsx({
   }
 
   const xlsxData = generateXlsx([{ name: 'Matriz de Performance', rows, merges }])
-  const now = format(new Date(), 'yyyyMMdd')
-  downloadXlsx(xlsxData, `matriz_performance_operacional_${now}.xlsx`)
+  downloadXlsx(xlsxData, 'Matriz_Performance_Operacional.xlsx')
 }
