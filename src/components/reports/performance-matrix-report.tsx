@@ -3,6 +3,9 @@ import { format, isValid } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { parsePBDate } from '@/lib/order-utils'
+import { Button } from '@/components/ui/button'
+import { FileSpreadsheet } from 'lucide-react'
+import { exportPerformanceMatrixToXlsx } from '@/lib/matrix-export'
 import type { Pedve012Record } from '@/services/pedve012'
 
 interface PerformanceMatrixReportProps {
@@ -73,8 +76,22 @@ export function PerformanceMatrixReport({ pedve012 }: PerformanceMatrixReportPro
     )
   }
 
+  const handleExportExcel = () => {
+    exportPerformanceMatrixToXlsx({ sortedMonthKeys, monthMap, formatMonthLabel })
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-subtle border border-slate-200 overflow-hidden flex flex-col animate-fade-in">
+      <div className="flex items-center justify-end px-4 py-3 border-b border-slate-100">
+        <Button
+          onClick={handleExportExcel}
+          variant="outline"
+          className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          Exportar para o Excel
+        </Button>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse text-right whitespace-nowrap min-w-max">
           <thead>
