@@ -113,7 +113,11 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
         </div>
       </div>
       <div className="overflow-x-auto">
-        <Pedve012Table items={filteredBySearch} transportadoras={transportadoras} />
+        <Pedve012Table
+          items={filteredBySearch}
+          pedve005={pedve005}
+          transportadoras={transportadoras}
+        />
       </div>
       <div className="p-4 border-t border-slate-200 flex items-center text-sm text-slate-500 bg-white">
         <span>{filteredBySearch.length} registros</span>

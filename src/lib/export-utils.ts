@@ -1,7 +1,13 @@
 import type { Pedve012Record } from '@/services/pedve012'
 import type { Pedve005Record } from '@/services/pedve005'
 import type { TransportadoraRecord } from '@/services/transportadoras'
-import { formatDateTime, formatDate } from './order-utils'
+import {
+  formatDateTime,
+  formatDate,
+  parsePBDate,
+  calcularDataSeparacao,
+  calcularDataSegura,
+} from './order-utils'
 
 interface ExportOptions {
   pedve012: Pedve012Record[]
@@ -9,26 +15,22 @@ interface ExportOptions {
   transportadoras: TransportadoraRecord[]
 }
 
-type CollectionSource = 'p012' | 'p005' | 'transp'
+type CollectionSource = 'p012' | 'p005' | 'transp' | 'calculated'
 
 const EXPORT_COLUMNS: { key: string; label: string; from: CollectionSource }[] = [
-  { key: 'pedido', label: 'Número do Pedido', from: 'p012' },
-  { key: 'status', label: 'Status', from: 'p005' },
+  { key: 'pedido', label: 'Pedido', from: 'p012' },
   { key: 'situacao', label: 'Situação', from: 'p012' },
-  { key: 'nota_fiscal', label: 'Nota Fiscal', from: 'p012' },
-  { key: 'qtd_itens', label: 'Qtd. Itens', from: 'p005' },
   { key: 'cliente', label: 'Cliente', from: 'p012' },
-  { key: 'uf', label: 'UF', from: 'p012' },
   { key: 'cidade', label: 'Cidade', from: 'p005' },
-  { key: 'bairro', label: 'Bairro', from: 'p012' },
   { key: 'tipo_entrega', label: 'Tipo de Entrega', from: 'p012' },
-  { key: 'emissao', label: 'Emissão', from: 'p012' },
-  { key: 'envio_liberacao', label: 'Envio para Liberação', from: 'p012' },
-  { key: 'prev_entr', label: 'Previsão de Entrega', from: 'p012' },
-  { key: 'transmitir_nfe', label: 'Transmissão NFe', from: 'p012' },
   { key: 'transportadora', label: 'Transportadora', from: 'transp' },
-  { key: 'prazo_transportadora', label: 'Prazo Transportadora', from: 'transp' },
   { key: 'prazo_de_entrega', label: 'Prazo de Entrega', from: 'transp' },
+  { key: 'emissao', label: 'Emissão', from: 'p012' },
+  { key: 'envio_liberacao', label: 'Envio/Liberação', from: 'p012' },
+  { key: 'prev_entr', label: 'Prev. Entr.', from: 'p012' },
+  { key: 'qtd_itens', label: 'Qtd Itens', from: 'p005' },
+  { key: 'data_sep', label: 'Data Sep.', from: 'calculated' },
+  { key: 'data_segura', label: 'Data Segura', from: 'calculated' },
 ]
 
 const DATE_FIELDS = new Set(['emissao', 'envio_liberacao', 'prev_entr', 'transmitir_nfe'])
@@ -100,6 +102,18 @@ export function exportOrdersToCSV({ pedve012, pedve005, transportadoras }: Expor
     }
 
     const cells = EXPORT_COLUMNS.map((col) => {
+      if (col.from === 'calculated') {
+        const prevEntrParsed = parsePBDate(p012.prev_entr)
+        const prazo = transp?.prazo_de_entrega
+        if (col.key === 'data_sep' && prevEntrParsed && prazo) {
+          return escapeCsvCell(formatDate(calcularDataSeparacao(prevEntrParsed, prazo)))
+        }
+        if (col.key === 'data_segura' && prevEntrParsed && prazo) {
+          const dataSep = calcularDataSeparacao(prevEntrParsed, prazo)
+          return escapeCsvCell(formatDate(calcularDataSegura(dataSep)))
+        }
+        return ''
+      }
       const source = sourceMap[col.from]
       const rawValue = source ? source[col.key] : undefined
       return escapeCsvCell(formatFieldValue(col.key, rawValue))

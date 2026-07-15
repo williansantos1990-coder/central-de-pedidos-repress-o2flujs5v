@@ -156,7 +156,11 @@ export function Pedve012Report() {
 
       <div className="bg-white rounded-xl shadow-subtle border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <Pedve012Table items={searchedRecords} transportadoras={transportadoras} />
+          <Pedve012Table
+            items={searchedRecords}
+            pedve005={pedve005}
+            transportadoras={transportadoras}
+          />
         </div>
       </div>
     </div>

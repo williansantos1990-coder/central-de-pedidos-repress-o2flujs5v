@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   Table,
   TableBody,
@@ -19,16 +20,32 @@ import {
   formatNumber,
   calcularDataSeparacao,
   calcularDataSegura,
-  findPrazoByCity,
   getStatusBadgeClass,
 } from '@/lib/order-utils'
 
 interface Pedve012TableProps {
   items: Pedve012Record[]
+  pedve005: Pedve005Record[]
   transportadoras: TransportadoraRecord[]
 }
 
-export function Pedve012Table({ items, transportadoras }: Pedve012TableProps) {
+export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012TableProps) {
+  const p005Map = useMemo(() => {
+    const map = new Map<string, Pedve005Record>()
+    pedve005.forEach((r) => {
+      if (r.pedido) map.set(r.pedido, r)
+    })
+    return map
+  }, [pedve005])
+
+  const transpMap = useMemo(() => {
+    const map = new Map<string, TransportadoraRecord>()
+    transportadoras.forEach((t) => {
+      if (t.destino) map.set(t.destino.toUpperCase().trim(), t)
+    })
+    return map
+  }, [transportadoras])
+
   if (items.length === 0) {
     return (
       <div className="h-32 flex items-center justify-center text-slate-500">
@@ -41,20 +58,26 @@ export function Pedve012Table({ items, transportadoras }: Pedve012TableProps) {
       <TableHeader className="bg-slate-50">
         <TableRow className="hover:bg-transparent">
           <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Pedido</TableHead>
-          <TableHead className="font-semibold text-slate-700 min-w-[150px]">Cliente</TableHead>
-          <TableHead className="font-semibold text-slate-700">Destino</TableHead>
-          <TableHead className="font-semibold text-slate-700">Tipo Entrega</TableHead>
           <TableHead className="font-semibold text-slate-700">Situação</TableHead>
+          <TableHead className="font-semibold text-slate-700 min-w-[150px]">Cliente</TableHead>
+          <TableHead className="font-semibold text-slate-700">Cidade</TableHead>
+          <TableHead className="font-semibold text-slate-700">Tipo Entrega</TableHead>
+          <TableHead className="font-semibold text-slate-700">Transportadora</TableHead>
+          <TableHead className="font-semibold text-slate-700 text-center">Prazo</TableHead>
           <TableHead className="font-semibold text-slate-700">Emissão</TableHead>
+          <TableHead className="font-semibold text-slate-700">Envio/Liberação</TableHead>
           <TableHead className="font-semibold text-slate-700">Prev. Entr.</TableHead>
+          <TableHead className="font-semibold text-slate-700 text-center">Itens</TableHead>
           <TableHead className="font-semibold text-primary bg-primary/5">Data Sep.</TableHead>
           <TableHead className="font-semibold text-success bg-success/5">Data Segura</TableHead>
-          <TableHead className="font-semibold text-slate-700 text-center">Itens</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {items.map((order) => {
-          const prazoDias = findPrazoByCity(order.cidade, transportadoras)
+          const p005 = p005Map.get(order.pedido)
+          const cidade = p005?.cidade || ''
+          const transp = cidade ? transpMap.get(cidade.toUpperCase().trim()) : undefined
+          const prazoDias = transp?.prazo_de_entrega ?? null
           const prevEntr = parsePBDate(order.prev_entr)
           const dataSep = prevEntr && prazoDias ? calcularDataSeparacao(prevEntr, prazoDias) : null
           const dataSegura = dataSep ? calcularDataSegura(dataSep) : null
@@ -70,43 +93,54 @@ export function Pedve012Table({ items, transportadoras }: Pedve012TableProps) {
                 isCritical ? 'bg-destructive/5 hover:bg-destructive/10' : 'hover:bg-slate-50',
               )}
             >
-              <TableCell className="font-medium text-slate-800">
+              <TableCell className="font-medium text-slate-800 whitespace-nowrap">
                 {order.pedido}
                 {isCritical && <AlertCircle className="w-3.5 h-3.5 text-destructive inline ml-2" />}
-              </TableCell>
-              <TableCell className="text-slate-600 truncate max-w-[200px]" title={order.cliente}>
-                {order.cliente}
-              </TableCell>
-              <TableCell className="text-slate-600 text-sm">
-                {order.cidade} - {order.uf}
-              </TableCell>
-              <TableCell className="text-slate-600">
-                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200">
-                  {order.tipo_entrega || '-'}
-                </span>
               </TableCell>
               <TableCell>
                 <span
                   className={cn(
-                    'text-[11px] px-2.5 py-1 rounded-full font-medium border',
+                    'text-[11px] px-2.5 py-1 rounded-full font-medium border whitespace-nowrap',
                     getStatusBadgeClass(order.situacao),
                   )}
                 >
                   {order.situacao || '-'}
                 </span>
               </TableCell>
+              <TableCell className="text-slate-600 truncate max-w-[200px]" title={order.cliente}>
+                {order.cliente}
+              </TableCell>
+              <TableCell className="text-slate-600 text-sm whitespace-nowrap">
+                {cidade || '-'}
+              </TableCell>
               <TableCell className="text-slate-600">
-                {formatDate(parsePBDate(order.emissao))}
+                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md border border-slate-200 whitespace-nowrap">
+                  {order.tipo_entrega || '-'}
+                </span>
               </TableCell>
-              <TableCell className="text-slate-600">{formatDate(prevEntr)}</TableCell>
-              <TableCell className="font-medium text-primary bg-primary/5">
-                {formatDate(dataSep)}
-              </TableCell>
-              <TableCell className="font-medium text-success bg-success/5">
-                {formatDate(dataSegura)}
+              <TableCell className="text-slate-600 text-sm whitespace-nowrap">
+                {transp?.transportadora || '-'}
               </TableCell>
               <TableCell className="text-center font-medium text-slate-700">
-                {order.nr_itens || 0}
+                {prazoDias ?? '-'}
+              </TableCell>
+              <TableCell className="text-slate-600 whitespace-nowrap">
+                {formatDate(parsePBDate(order.emissao))}
+              </TableCell>
+              <TableCell className="text-slate-600 whitespace-nowrap">
+                {formatDate(parsePBDate(order.envio_liberacao))}
+              </TableCell>
+              <TableCell className="text-slate-600 whitespace-nowrap">
+                {formatDate(prevEntr)}
+              </TableCell>
+              <TableCell className="text-center font-medium text-slate-700">
+                {p005?.qtd_itens ?? 0}
+              </TableCell>
+              <TableCell className="font-medium text-primary bg-primary/5 whitespace-nowrap">
+                {formatDate(dataSep)}
+              </TableCell>
+              <TableCell className="font-medium text-success bg-success/5 whitespace-nowrap">
+                {formatDate(dataSegura)}
               </TableCell>
             </TableRow>
           )
