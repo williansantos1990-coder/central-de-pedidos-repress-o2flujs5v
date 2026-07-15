@@ -28,6 +28,7 @@ import {
   Calendar as CalendarIcon,
   Loader2,
   Cuboid,
+  ClipboardCheck,
 } from 'lucide-react'
 
 function extractDateKey(dateStr: string | null | undefined): string | null {
@@ -215,10 +216,10 @@ export default function Index() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <MetricCard
-          title="Receita Total"
-          value={formatCurrency(metrics.receita)}
-          subtitle="Soma de vl_ped_rs (PEDVE005)"
-          icon={DollarSign}
+          title="Pedidos Liberados"
+          value={metrics.pedidos}
+          subtitle="Pedidos liberados para entrega"
+          icon={ClipboardCheck}
           iconColor="text-success"
           iconBg="bg-success/10"
         />
