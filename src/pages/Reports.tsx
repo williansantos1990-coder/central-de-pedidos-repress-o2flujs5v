@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Search, Download, Filter, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isBefore, startOfDay } from 'date-fns'
+import { PerformanceMatrix } from '@/components/dashboard/performance-matrix'
 
 export default function Reports() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -263,6 +264,8 @@ export default function Reports() {
           </div>
         </div>
       </div>
+
+      <PerformanceMatrix />
     </div>
   )
 }
