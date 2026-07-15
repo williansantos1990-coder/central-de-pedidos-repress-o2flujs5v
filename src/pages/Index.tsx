@@ -6,6 +6,7 @@ import { getAllTransportadoras, type TransportadoraRecord } from '@/services/tra
 import { parsePBDate, formatCurrency, formatNumber } from '@/lib/order-utils'
 import { MetricCard } from '@/components/dashboard/metric-card'
 import { ChartsSection } from '@/components/dashboard/charts-section'
+import { TipoEntregaFilter } from '@/components/dashboard/tipo-entrega-filter'
 import { GeographySection } from '@/components/dashboard/geography-section'
 import { LogisticsSection } from '@/components/dashboard/logistics-section'
 import { useRealtime } from '@/hooks/use-realtime'
@@ -48,7 +49,7 @@ export default function Index() {
   const [transportadoras, setTransportadoras] = useState<TransportadoraRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<string | undefined>()
-  const [selectedSituacao, setSelectedSituacao] = useState('all')
+  const [selectedTipos, setSelectedTipos] = useState<string[]>([])
 
   const loadData = useCallback(async () => {
     try {
@@ -83,6 +84,14 @@ export default function Index() {
     return Array.from(dateSet).sort((a, b) => a.localeCompare(b))
   }, [pedve012])
 
+  const availableTiposEntrega = useMemo(() => {
+    const set = new Set<string>()
+    pedve012.forEach((r) => {
+      if (r.tipo_entrega) set.add(r.tipo_entrega)
+    })
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [pedve012])
+
   useEffect(() => {
     if (!selectedDate && availableDates.length > 0) {
       setSelectedDate(availableDates[availableDates.length - 1])
@@ -97,9 +106,11 @@ export default function Index() {
     if (selectedDate) {
       r = r.filter((o) => extractDateKey(o.envio_liberacao) === selectedDate)
     }
-    if (selectedSituacao !== 'all') r = r.filter((o) => o.situacao === selectedSituacao)
+    if (selectedTipos.length > 0) {
+      r = r.filter((o) => selectedTipos.includes(o.tipo_entrega || ''))
+    }
     return r
-  }, [pedve012, selectedDate, selectedSituacao])
+  }, [pedve012, selectedDate, selectedTipos])
 
   const filteredPedidos = useMemo(() => {
     return new Set(filtered012.map((p) => p.pedido))
@@ -192,20 +203,11 @@ export default function Index() {
             Limpar
           </Button>
         )}
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-slate-700">Situação</span>
-          <Select value={selectedSituacao} onValueChange={setSelectedSituacao}>
-            <SelectTrigger className="w-[180px] h-9">
-              <SelectValue placeholder="Situação" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as Situações</SelectItem>
-              <SelectItem value="Normal">Normal</SelectItem>
-              <SelectItem value="Atrasado">Atrasado</SelectItem>
-              <SelectItem value="Gargalo">Gargalo</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <TipoEntregaFilter
+          options={availableTiposEntrega}
+          selected={selectedTipos}
+          onChange={setSelectedTipos}
+        />
         <div className="text-sm text-slate-500 font-medium ml-auto self-end mb-1">
           Pedidos no período: {filtered012.length}
         </div>
