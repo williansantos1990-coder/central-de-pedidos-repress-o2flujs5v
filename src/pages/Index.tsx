@@ -31,6 +31,7 @@ import {
   ClipboardCheck,
   FileWarning,
   CheckCircle2,
+  Flame,
 } from 'lucide-react'
 
 function extractDateKey(dateStr: string | null | undefined): string | null {
@@ -133,6 +134,12 @@ export default function Index() {
       itens: filtered012.reduce((s, r) => s + (r.nr_itens || 0), 0),
       volume: filtered012.reduce((s, r) => s + (r.volume_local_estoque || 0), 0),
       cubagem: filtered012.reduce((s, r) => s + (r.cubagem_local_estoque || 0), 0),
+      urgentes: filtered012.filter((r) => {
+        const envioKey = extractDateKey(r.envio_liberacao)
+        const prevKey = extractDateKey(r.prev_entr)
+        if (!envioKey || !prevKey) return false
+        return envioKey === prevKey
+      }).length,
     }),
     [filtered005, filtered012],
   )
@@ -244,12 +251,12 @@ export default function Index() {
           iconBg="bg-orange-100"
         />
         <MetricCard
-          title="Volume Total"
-          value={formatNumber(metrics.volume)}
-          subtitle="Soma de volume_local_estoque"
-          icon={Ruler}
-          iconColor="text-blue-600"
-          iconBg="bg-blue-100"
+          title="Pedidos Urgentes"
+          value={metrics.urgentes}
+          subtitle="Liberação na data da entrega"
+          icon={Flame}
+          iconColor="text-red-600"
+          iconBg="bg-red-100"
         />
         <MetricCard
           title="Cubagem Total"
