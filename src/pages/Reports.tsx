@@ -10,19 +10,15 @@ import { ReportDetail } from '@/components/reports/report-detail'
 
 const REPORTS: ReportDefinition[] = [
   {
+    id: 'performance',
+    name: 'Matriz de Performance Operacional',
+    summary:
+      'Comparativo mensal do volume de pedidos liberados vs faturados para identificar gargalos.',
+  },
+  {
     id: 'separacao',
     name: 'Separação e Data Segura',
     summary: 'Acompanhamento detalhado de prazos operacionais cruzados com SLA de transportadoras.',
-  },
-  {
-    id: 'pedidos',
-    name: 'Pedidos Geral',
-    summary: 'Visão geral de todos os pedidos com status, valores e informações de entrega.',
-  },
-  {
-    id: 'transportadoras',
-    name: 'Transportadoras e Prazos',
-    summary: 'Cadastro de transportadoras com prazos de entrega por destino e padrões.',
   },
 ]
 

@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card'
-import { FileText, Package, Truck, ArrowRight } from 'lucide-react'
+import { FileText, Grid3X3, ArrowRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 export interface ReportDefinition {
@@ -9,9 +9,8 @@ export interface ReportDefinition {
 }
 
 const REPORT_ICONS: Record<string, ReactNode> = {
+  performance: <Grid3X3 className="w-6 h-6 text-primary" />,
   separacao: <FileText className="w-6 h-6 text-primary" />,
-  pedidos: <Package className="w-6 h-6 text-primary" />,
-  transportadoras: <Truck className="w-6 h-6 text-primary" />,
 }
 
 interface ReportListProps {
