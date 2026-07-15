@@ -292,8 +292,7 @@ export default function DataImport() {
             </div>
             <ul className="list-disc list-inside space-y-1.5 text-muted-foreground">
               <li>
-                Os arquivos são <strong>processados no navegador</strong> — nenhum arquivo bruto é
-                enviado ao servidor
+                Os dados existentes serão <strong>removidos</strong> antes da importação dos novos
               </li>
               <li>
                 PEDVE012.xlsx deve conter uma aba <strong>"PEDVE012"</strong>
@@ -310,10 +309,6 @@ export default function DataImport() {
               <li>
                 Formatatos aceitos: <strong>XLSX</strong> e <strong>CSV</strong> (UTF-8)
               </li>
-              <li>
-                Os dados existentes serão <strong>removidos</strong> antes da importação dos novos
-              </li>
-              <li>Datas devem estar no formato DD/MM/AAAA ou AAAA-MM-DD</li>
             </ul>
           </div>
         </CardContent>
