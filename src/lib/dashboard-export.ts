@@ -61,9 +61,13 @@ export function exportDashboardToXlsx({
   })
 
   const transpByDestino = new Map<string, TransportadoraRecord>()
+  const transpByPadrao = new Map<string, TransportadoraRecord>()
   transportadoras.forEach((t) => {
     if (t.destino) {
       transpByDestino.set(t.destino.toUpperCase().trim(), t)
+    }
+    if (t.padrao_do_exceda) {
+      transpByPadrao.set(t.padrao_do_exceda.toUpperCase().trim(), t)
     }
   })
 
@@ -74,8 +78,8 @@ export function exportDashboardToXlsx({
 
   for (const p012 of pedve012) {
     const p005 = p005Map.get(p012.pedido)
-    const cidadeKey = (p005?.cidade || '').toUpperCase().trim()
-    const transp = transpByDestino.get(cidadeKey)
+    const cidadeKey = (p005?.cidade || p012.cidade || '').toUpperCase().trim()
+    const transp = transpByDestino.get(cidadeKey) || transpByPadrao.get(cidadeKey)
 
     const sourceMap: Record<string, Record<string, unknown> | undefined> = {
       p012: p012 as unknown as Record<string, unknown>,
