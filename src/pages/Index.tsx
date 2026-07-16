@@ -31,7 +31,7 @@ import {
   Download,
   X,
 } from 'lucide-react'
-import { exportOrdersToCSV } from '@/lib/export-utils'
+import { exportDashboardToXlsx } from '@/lib/dashboard-export'
 import { useToast } from '@/hooks/use-toast'
 
 function formatDateLabel(dateKey: string): string {
@@ -209,7 +209,11 @@ export default function Index() {
             }
             setExporting(true)
             try {
-              exportOrdersToCSV({ pedve012: filtered012, pedve005: filtered005, transportadoras })
+              exportDashboardToXlsx({
+                pedve012: filtered012,
+                pedve005: filtered005,
+                transportadoras,
+              })
               toast({
                 title: 'Exportação concluída',
                 description: `${filtered012.length} pedido(s) exportado(s).`,
