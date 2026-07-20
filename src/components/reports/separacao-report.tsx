@@ -26,39 +26,7 @@ interface SeparacaoReportProps {
 
 export function SeparacaoReport({ pedve012, pedve005, transportadoras }: SeparacaoReportProps) {
   const [search, setSearch] = useState('')
-  const [selectedGrupos, setSelectedGrupos] = useState<string[]>([])
-  const [selectedCubagens, setSelectedCubagens] = useState<string[]>([])
-  const [selectedNrItens, setSelectedNrItens] = useState<string[]>([])
   const filters = useCascadingFilters(pedve012)
-
-  const availableGrupos = useMemo(() => {
-    const set = new Set<string>()
-    pedve012.forEach((r) => {
-      if (r.grupo) set.add(r.grupo)
-    })
-    return Array.from(set).sort()
-  }, [pedve012])
-
-  const availableCubagens = useMemo(() => {
-    const set = new Set<string>()
-    pedve012.forEach((r) => {
-      if (r.cubagem_local_estoque != null) {
-        set.add(String(r.cubagem_local_estoque))
-      }
-    })
-    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b))
-  }, [pedve012])
-
-  const availableNrItens = useMemo(() => {
-    const set = new Set<string>()
-    pedve012.forEach((r) => {
-      if (r.nr_itens != null) set.add(String(r.nr_itens))
-    })
-    return Array.from(set).sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
-  }, [pedve012])
-
-  const hasExtraFilters =
-    selectedGrupos.length > 0 || selectedCubagens.length > 0 || selectedNrItens.length > 0
 
   const filteredBySearch = useMemo(() => {
     let result = filters.filteredRecords
@@ -73,29 +41,8 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
       )
     }
 
-    if (selectedGrupos.length > 0) {
-      const grupoSet = new Set(selectedGrupos)
-      result = result.filter((r) => r.grupo && grupoSet.has(r.grupo))
-    }
-
-    if (selectedCubagens.length > 0) {
-      const cubagemSet = new Set(selectedCubagens)
-      result = result.filter((r) => {
-        if (r.cubagem_local_estoque == null) return false
-        return cubagemSet.has(String(r.cubagem_local_estoque))
-      })
-    }
-
-    if (selectedNrItens.length > 0) {
-      const nrItensSet = new Set(selectedNrItens)
-      result = result.filter((r) => {
-        if (r.nr_itens == null) return false
-        return nrItensSet.has(String(r.nr_itens))
-      })
-    }
-
     return result
-  }, [filters.filteredRecords, search, selectedGrupos, selectedCubagens, selectedNrItens])
+  }, [filters.filteredRecords, search])
 
   const handleExport = () => {
     exportOrdersToCSV({ pedve012: filteredBySearch, pedve005, transportadoras })
@@ -103,12 +50,9 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
 
   const clearAll = () => {
     filters.clearAll()
-    setSelectedGrupos([])
-    setSelectedCubagens([])
-    setSelectedNrItens([])
   }
 
-  const hasActiveFilters = filters.hasActiveFilters || hasExtraFilters
+  const hasActiveFilters = filters.hasActiveFilters
 
   return (
     <div className="bg-white rounded-xl shadow-subtle border border-slate-200 overflow-hidden flex flex-col">
@@ -170,25 +114,25 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
           <CascadingFilter
             label="Grupo"
             placeholder="Todos os grupos"
-            options={availableGrupos}
-            selected={selectedGrupos}
-            onChange={setSelectedGrupos}
+            options={filters.availableGrupos}
+            selected={filters.selectedGrupos}
+            onChange={filters.setSelectedGrupos}
             selectAllLabel="Todos os Grupos"
           />
           <CascadingFilter
             label="Cubagem Local Estoque"
             placeholder="Todas as cubagens"
-            options={availableCubagens}
-            selected={selectedCubagens}
-            onChange={setSelectedCubagens}
+            options={filters.availableCubagens}
+            selected={filters.selectedCubagens}
+            onChange={filters.setSelectedCubagens}
             selectAllLabel="Todas as Cubagens"
           />
           <CascadingFilter
             label="Nr Itens"
             placeholder="Todos os nr itens"
-            options={availableNrItens}
-            selected={selectedNrItens}
-            onChange={setSelectedNrItens}
+            options={filters.availableNrItens}
+            selected={filters.selectedNrItens}
+            onChange={filters.setSelectedNrItens}
             selectAllLabel="Todos os Nr Itens"
           />
           {hasActiveFilters && (
