@@ -17,6 +17,11 @@ export function Pedve012Report() {
   const [pedve005, setPedve005] = useState<Pedve005Record[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedGrupos, setSelectedGrupos] = useState<string[]>([])
+  const [cubagemMin, setCubagemMin] = useState('')
+  const [cubagemMax, setCubagemMax] = useState('')
+  const [nrItensMin, setNrItensMin] = useState('')
+  const [nrItensMax, setNrItensMax] = useState('')
 
   const loadData = useCallback(async () => {
     try {
@@ -51,16 +56,71 @@ export function Pedve012Report() {
 
   const filters = useCascadingFilters(records)
 
+  const availableGrupos = useMemo(() => {
+    const set = new Set<string>()
+    records.forEach((r) => {
+      if (r.grupo) set.add(r.grupo)
+    })
+    return Array.from(set).sort()
+  }, [records])
+
+  const hasExtraFilters =
+    selectedGrupos.length > 0 ||
+    cubagemMin !== '' ||
+    cubagemMax !== '' ||
+    nrItensMin !== '' ||
+    nrItensMax !== ''
+
   const searchedRecords = useMemo(() => {
-    if (!searchTerm.trim()) return filters.filteredRecords
-    const term = searchTerm.toLowerCase()
-    return filters.filteredRecords.filter(
-      (r) =>
-        r.pedido?.toLowerCase().includes(term) ||
-        r.cliente?.toLowerCase().includes(term) ||
-        r.cidade?.toLowerCase().includes(term),
-    )
-  }, [filters.filteredRecords, searchTerm])
+    let result = filters.filteredRecords
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase()
+      result = result.filter(
+        (r) =>
+          r.pedido?.toLowerCase().includes(term) ||
+          r.cliente?.toLowerCase().includes(term) ||
+          r.cidade?.toLowerCase().includes(term),
+      )
+    }
+
+    if (selectedGrupos.length > 0) {
+      const grupoSet = new Set(selectedGrupos)
+      result = result.filter((r) => r.grupo && grupoSet.has(r.grupo))
+    }
+
+    const cMin = cubagemMin !== '' ? parseFloat(cubagemMin) : null
+    const cMax = cubagemMax !== '' ? parseFloat(cubagemMax) : null
+    if (cMin !== null || cMax !== null) {
+      result = result.filter((r) => {
+        const val = r.cubagem_local_estoque ?? 0
+        if (cMin !== null && val < cMin) return false
+        if (cMax !== null && val > cMax) return false
+        return true
+      })
+    }
+
+    const nMin = nrItensMin !== '' ? parseInt(nrItensMin, 10) : null
+    const nMax = nrItensMax !== '' ? parseInt(nrItensMax, 10) : null
+    if (nMin !== null || nMax !== null) {
+      result = result.filter((r) => {
+        const val = r.nr_itens ?? 0
+        if (nMin !== null && val < nMin) return false
+        if (nMax !== null && val > nMax) return false
+        return true
+      })
+    }
+
+    return result
+  }, [
+    filters.filteredRecords,
+    searchTerm,
+    selectedGrupos,
+    cubagemMin,
+    cubagemMax,
+    nrItensMin,
+    nrItensMax,
+  ])
 
   const handleExport = () => {
     exportOrdersToCSV({
@@ -69,6 +129,17 @@ export function Pedve012Report() {
       transportadoras,
     })
   }
+
+  const clearAll = () => {
+    filters.clearAll()
+    setSelectedGrupos([])
+    setCubagemMin('')
+    setCubagemMax('')
+    setNrItensMin('')
+    setNrItensMax('')
+  }
+
+  const hasActiveFilters = filters.hasActiveFilters || hasExtraFilters
 
   if (loading) {
     return (
@@ -140,11 +211,61 @@ export function Pedve012Report() {
             width="w-[200px]"
             selectAllLabel="Todas as Cidades"
           />
-          {filters.hasActiveFilters && (
+          <CascadingFilter
+            label="Grupo"
+            placeholder="Selecione o grupo"
+            options={availableGrupos}
+            selected={selectedGrupos}
+            onChange={setSelectedGrupos}
+            emptyMessage="Nenhum grupo disponível"
+            width="w-[200px]"
+            selectAllLabel="Todos os Grupos"
+          />
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-700">Cubagem Local Estoque</span>
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                placeholder="Mín"
+                value={cubagemMin}
+                onChange={(e) => setCubagemMin(e.target.value)}
+                className="w-[90px] h-9"
+              />
+              <span className="text-slate-400 text-xs">-</span>
+              <Input
+                type="number"
+                placeholder="Máx"
+                value={cubagemMax}
+                onChange={(e) => setCubagemMax(e.target.value)}
+                className="w-[90px] h-9"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-700">Nr Itens</span>
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                placeholder="Mín"
+                value={nrItensMin}
+                onChange={(e) => setNrItensMin(e.target.value)}
+                className="w-[90px] h-9"
+              />
+              <span className="text-slate-400 text-xs">-</span>
+              <Input
+                type="number"
+                placeholder="Máx"
+                value={nrItensMax}
+                onChange={(e) => setNrItensMax(e.target.value)}
+                className="w-[90px] h-9"
+              />
+            </div>
+          </div>
+          {hasActiveFilters && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={filters.clearAll}
+              onClick={clearAll}
               className="text-slate-500 hover:text-slate-700"
             >
               <X className="w-3.5 h-3.5 mr-1" />
