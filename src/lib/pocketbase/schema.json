@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T17:00:56.300Z",
+  "generatedAt": "2026-07-20T17:05:29.118Z",
   "collections": [
     {
       "name": "users",
@@ -425,12 +425,6 @@
           "system": false
         },
         {
-          "name": "cubagem_local_estoque",
-          "type": "number",
-          "required": false,
-          "system": false
-        },
-        {
           "name": "volume_local_estoque",
           "type": "number",
           "required": false,
@@ -545,6 +539,12 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "cubagem_local_estoque",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [

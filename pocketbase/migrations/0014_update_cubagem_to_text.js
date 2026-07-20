@@ -20,7 +20,7 @@ migrate(
       .execute()
 
     // Step 3: Remove old number field
-    col.fields.remove(existing.getId())
+    col.fields.removeByName('cubagem_local_estoque')
     app.save(col)
 
     // Step 4: Add new text field with original name
@@ -33,7 +33,7 @@ migrate(
     // Step 6: Remove temp field
     const tmp = col.fields.getByName('cubagem_tmp_text')
     if (tmp) {
-      col.fields.remove(tmp.getId())
+      col.fields.removeByName('cubagem_tmp_text')
       app.save(col)
     }
   },
@@ -41,7 +41,7 @@ migrate(
     const col = app.findCollectionByNameOrId('pedve012')
     const field = col.fields.getByName('cubagem_local_estoque')
     if (field) {
-      col.fields.remove(field.getId())
+      col.fields.removeByName('cubagem_local_estoque')
       col.fields.add(new NumberField({ name: 'cubagem_local_estoque' }))
       app.save(col)
     }
