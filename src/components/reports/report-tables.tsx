@@ -20,9 +20,9 @@ import {
   formatNumber,
   calcularDataSeparacao,
   calcularDataSegura,
-  calcularDiasAtrasos,
   getStatusBadgeClass,
 } from '@/lib/order-utils'
+import { calcularDiasAtrasos } from '@/lib/dias-atrasos'
 
 interface Pedve012TableProps {
   items: Pedve012Record[]

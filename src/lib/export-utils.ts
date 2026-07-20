@@ -7,8 +7,8 @@ import {
   parsePBDate,
   calcularDataSeparacao,
   calcularDataSegura,
-  calcularDiasAtrasos,
 } from './order-utils'
+import { calcularDiasAtrasos } from './dias-atrasos'
 
 interface ExportOptions {
   pedve012: Pedve012Record[]
