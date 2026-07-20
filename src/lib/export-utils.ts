@@ -53,10 +53,12 @@ function formatFieldValue(key: string, value: unknown): string {
   if (typeof value === 'number') return String(value)
   const str = String(value)
   if (DATE_FIELDS.has(key)) {
+    const parsed = parsePBDate(str)
+    if (!parsed) return ''
     if (str.includes('T') || str.includes(':')) {
-      return formatDateTime(new Date(str))
+      return formatDateTime(parsed)
     }
-    return formatDate(new Date(str))
+    return formatDate(parsed)
   }
   return str
 }

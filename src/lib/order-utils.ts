@@ -3,7 +3,14 @@ import type { TransportadoraRecord } from '@/services/transportadoras'
 
 export function parsePBDate(dateStr: string | null | undefined): Date | null {
   if (!dateStr) return null
-  const d = new Date(dateStr)
+  let str = dateStr.trim()
+  str = str.replace(/Z$/i, '')
+  str = str.replace(/(\.\d+)$/, '')
+  str = str.replace(' ', 'T')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    str = str + 'T00:00:00'
+  }
+  const d = new Date(str)
   return isNaN(d.getTime()) ? null : d
 }
 
