@@ -7,6 +7,7 @@ import {
   parsePBDate,
   calcularDataSeparacao,
   calcularDataSegura,
+  calcularDiasAtrasos,
 } from './order-utils'
 
 interface ExportOptions {
@@ -28,6 +29,7 @@ const EXPORT_COLUMNS: { key: string; label: string; from: CollectionSource }[] =
   { key: 'emissao', label: 'Emissão', from: 'p012' },
   { key: 'envio_liberacao', label: 'Envio/Liberação', from: 'p012' },
   { key: 'prev_entr', label: 'Prev. Entr.', from: 'p012' },
+  { key: 'dias_atrasos', label: 'Dias Atrasos', from: 'calculated' },
   { key: 'data_sep', label: 'Data Sep.', from: 'calculated' },
   { key: 'data_segura', label: 'Data Segura', from: 'calculated' },
   { key: 'nr_itens', label: 'Itens', from: 'p012' },
@@ -105,6 +107,13 @@ export function exportOrdersToCSV({ pedve012, pedve005, transportadoras }: Expor
       if (col.from === 'calculated') {
         const prevEntrParsed = parsePBDate(p012.prev_entr)
         const prazo = transp?.prazo_de_entrega
+        if (col.key === 'dias_atrasos') {
+          const dias = calcularDiasAtrasos(
+            parsePBDate(p012.termino_sep),
+            parsePBDate(p012.envio_liberacao),
+          )
+          return dias === null ? '' : escapeCsvCell(dias)
+        }
         if (col.key === 'data_sep' && prevEntrParsed && prazo) {
           return escapeCsvCell(formatDate(calcularDataSeparacao(prevEntrParsed, prazo)))
         }

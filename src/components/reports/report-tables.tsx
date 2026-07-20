@@ -20,6 +20,7 @@ import {
   formatNumber,
   calcularDataSeparacao,
   calcularDataSegura,
+  calcularDiasAtrasos,
   getStatusBadgeClass,
 } from '@/lib/order-utils'
 
@@ -68,6 +69,7 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
           <TableHead className="font-semibold text-slate-700">Emissão</TableHead>
           <TableHead className="font-semibold text-slate-700">Envio/Liberação</TableHead>
           <TableHead className="font-semibold text-slate-700">Prev. Entr.</TableHead>
+          <TableHead className="font-semibold text-slate-700 text-center">Dias Atrasos</TableHead>
           <TableHead className="font-semibold text-primary bg-primary/5">Data Sep.</TableHead>
           <TableHead className="font-semibold text-success bg-success/5">Data Segura</TableHead>
           <TableHead className="font-semibold text-slate-700 text-center">Itens</TableHead>
@@ -133,6 +135,29 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
               </TableCell>
               <TableCell className="text-slate-600 whitespace-nowrap">
                 {formatDate(prevEntr)}
+              </TableCell>
+              <TableCell className="text-center font-medium whitespace-nowrap">
+                {(() => {
+                  const dias = calcularDiasAtrasos(
+                    parsePBDate(order.termino_sep),
+                    parsePBDate(order.envio_liberacao),
+                  )
+                  if (dias === null) return '-'
+                  return (
+                    <span
+                      className={cn(
+                        'text-sm font-semibold',
+                        dias > 0
+                          ? 'text-destructive'
+                          : dias === 0
+                            ? 'text-warning'
+                            : 'text-success',
+                      )}
+                    >
+                      {dias > 0 ? `+${dias}` : dias}
+                    </span>
+                  )
+                })()}
               </TableCell>
               <TableCell className="font-medium text-primary bg-primary/5 whitespace-nowrap">
                 {formatDate(dataSep)}

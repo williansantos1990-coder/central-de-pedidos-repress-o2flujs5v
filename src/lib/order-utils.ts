@@ -1,4 +1,4 @@
-import { subDays, format } from 'date-fns'
+import { subDays, format, differenceInCalendarDays } from 'date-fns'
 import type { TransportadoraRecord } from '@/services/transportadoras'
 
 export function parsePBDate(dateStr: string | null | undefined): Date | null {
@@ -30,6 +30,14 @@ export function calcularDataSeparacao(prevEntr: Date, prazoDias: number): Date {
 
 export function calcularDataSegura(dataSeparacao: Date): Date {
   return subDays(dataSeparacao, 1)
+}
+
+export function calcularDiasAtrasos(
+  terminoSep: Date | null,
+  envioLiberacao: Date | null,
+): number | null {
+  if (!terminoSep || !envioLiberacao) return null
+  return differenceInCalendarDays(terminoSep, envioLiberacao)
 }
 
 export function findPrazoByCity(
