@@ -18,11 +18,15 @@ type DailyStats = {
 }
 
 type MonthMap = Record<string, Record<number, DailyStats>>
+type PendentesMap = Record<string, Record<number, number>>
+
+const PENDING_SITUACOES = new Set(['Aguardando Liberação', 'Em Separação'])
 
 export function PerformanceMatrixReport({ pedve012 }: PerformanceMatrixReportProps) {
-  const { monthMap, sortedMonthKeys } = useMemo(() => {
+  const { monthMap, sortedMonthKeys, pendentesPerDay } = useMemo(() => {
     const map: MonthMap = {}
     const keys = new Set<string>()
+    const pendentes: PendentesMap = {}
 
     pedve012.forEach((record) => {
       const dataLib = parsePBDate(record.envio_liberacao)
@@ -44,15 +48,35 @@ export function PerformanceMatrixReport({ pedve012 }: PerformanceMatrixReportPro
         if (!map[monthKey][day]) map[monthKey][day] = { pedidos: 0, faturado: 0 }
         map[monthKey][day].faturado++
       }
+
+      if (PENDING_SITUACOES.has(record.situacao)) {
+        const dataEmissao = parsePBDate(record.emissao)
+        if (dataEmissao && isValid(dataEmissao)) {
+          const monthKey = format(dataEmissao, 'yyyy-MM')
+          const day = dataEmissao.getDate()
+          keys.add(monthKey)
+          if (!pendentes[monthKey]) pendentes[monthKey] = {}
+          pendentes[monthKey][day] = (pendentes[monthKey][day] || 0) + 1
+        }
+      }
     })
 
     return {
       monthMap: map,
       sortedMonthKeys: Array.from(keys).sort(),
+      pendentesPerDay: pendentes,
     }
   }, [pedve012])
 
   const days = Array.from({ length: 31 }, (_, i) => i + 1)
+
+  const getPendentesCumulative = (monthKey: string, day: number) => {
+    let sum = 0
+    for (let d = 1; d <= day; d++) {
+      sum += pendentesPerDay[monthKey]?.[d] || 0
+    }
+    return sum
+  }
 
   const getHeatmapClass = (pct: number | null) => {
     if (pct === null) return ''
@@ -77,7 +101,7 @@ export function PerformanceMatrixReport({ pedve012 }: PerformanceMatrixReportPro
   }
 
   const handleExportExcel = () => {
-    exportPerformanceMatrixToXlsx({ sortedMonthKeys, monthMap, formatMonthLabel })
+    exportPerformanceMatrixToXlsx({ sortedMonthKeys, monthMap, pendentesPerDay, formatMonthLabel })
   }
 
   return (
@@ -102,7 +126,7 @@ export function PerformanceMatrixReport({ pedve012 }: PerformanceMatrixReportPro
               {sortedMonthKeys.map((mk) => (
                 <th
                   key={mk}
-                  colSpan={3}
+                  colSpan={4}
                   className="border-b border-r border-slate-200 p-2 text-center capitalize font-semibold bg-slate-50 text-slate-800"
                 >
                   {formatMonthLabel(mk)}
@@ -122,6 +146,9 @@ export function PerformanceMatrixReport({ pedve012 }: PerformanceMatrixReportPro
                     Faturado
                   </th>
                   <th className="border-b border-r border-slate-200 p-2 font-medium bg-slate-50 text-center w-24 text-slate-700">
+                    Pendentes
+                  </th>
+                  <th className="border-b border-r border-slate-200 p-2 font-medium bg-slate-50 text-center w-24 text-slate-700">
                     %
                   </th>
                 </Fragment>
@@ -138,6 +165,7 @@ export function PerformanceMatrixReport({ pedve012 }: PerformanceMatrixReportPro
                   const stats = monthMap[mk]?.[day]
                   const ped = stats?.pedidos || 0
                   const fat = stats?.faturado || 0
+                  const pend = getPendentesCumulative(mk, day)
                   const pct = ped > 0 ? (fat / ped) * 100 : null
 
                   return (
@@ -147,6 +175,9 @@ export function PerformanceMatrixReport({ pedve012 }: PerformanceMatrixReportPro
                       </td>
                       <td className="border-b border-r border-slate-200 p-2 text-slate-600">
                         {fat > 0 ? fat : ''}
+                      </td>
+                      <td className="border-b border-r border-slate-200 p-2 text-slate-600">
+                        {pend > 0 ? pend : ''}
                       </td>
                       <td
                         className={cn(

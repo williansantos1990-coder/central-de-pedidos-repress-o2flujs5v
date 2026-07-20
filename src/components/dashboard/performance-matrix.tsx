@@ -19,6 +19,10 @@ type MonthMap = {
   }
 }
 
+type PendentesMap = Record<string, Record<number, number>>
+
+const PENDING_SITUACOES = new Set(['Aguardando Liberação', 'Em Separação'])
+
 export function PerformanceMatrix() {
   const [data, setData] = useState<Pedve012Record[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,9 +43,9 @@ export function PerformanceMatrix() {
 
   const monthMap: MonthMap = {}
   const monthKeysSet = new Set<string>()
+  const pendentesPerDay: PendentesMap = {}
 
   data.forEach((record) => {
-    // Pedidos -> envio_liberacao
     const dataLib = parsePBDate(record.envio_liberacao)
     if (dataLib && isValid(dataLib)) {
       const monthKey = format(dataLib, 'yyyy-MM')
@@ -52,7 +56,6 @@ export function PerformanceMatrix() {
       monthMap[monthKey][day].pedidos++
     }
 
-    // Faturado -> transmitir_nfe
     const dataNfe = parsePBDate(record.transmitir_nfe)
     if (dataNfe && isValid(dataNfe)) {
       const monthKey = format(dataNfe, 'yyyy-MM')
@@ -62,10 +65,29 @@ export function PerformanceMatrix() {
       if (!monthMap[monthKey][day]) monthMap[monthKey][day] = { pedidos: 0, faturado: 0 }
       monthMap[monthKey][day].faturado++
     }
+
+    if (PENDING_SITUACOES.has(record.situacao)) {
+      const dataEmissao = parsePBDate(record.emissao)
+      if (dataEmissao && isValid(dataEmissao)) {
+        const monthKey = format(dataEmissao, 'yyyy-MM')
+        const day = dataEmissao.getDate()
+        monthKeysSet.add(monthKey)
+        if (!pendentesPerDay[monthKey]) pendentesPerDay[monthKey] = {}
+        pendentesPerDay[monthKey][day] = (pendentesPerDay[monthKey][day] || 0) + 1
+      }
+    }
   })
 
   const sortedMonthKeys = Array.from(monthKeysSet).sort()
   const days = Array.from({ length: 31 }, (_, i) => i + 1)
+
+  const getPendentesCumulative = (monthKey: string, day: number) => {
+    let sum = 0
+    for (let d = 1; d <= day; d++) {
+      sum += pendentesPerDay[monthKey]?.[d] || 0
+    }
+    return sum
+  }
 
   const getHeatmapClass = (pct: number | null) => {
     if (pct === null) return ''
@@ -108,7 +130,7 @@ export function PerformanceMatrix() {
                   {sortedMonthKeys.map((mk) => (
                     <th
                       key={mk}
-                      colSpan={3}
+                      colSpan={4}
                       className="border-b border-r border-slate-200 p-2 text-center capitalize font-semibold bg-slate-50"
                     >
                       {formatMonthLabel(mk)}
@@ -128,6 +150,9 @@ export function PerformanceMatrix() {
                         Faturado
                       </th>
                       <th className="border-b border-r border-slate-200 p-2 font-medium bg-slate-50 text-center w-24">
+                        Pendentes
+                      </th>
+                      <th className="border-b border-r border-slate-200 p-2 font-medium bg-slate-50 text-center w-24">
                         %
                       </th>
                     </Fragment>
@@ -144,6 +169,7 @@ export function PerformanceMatrix() {
                       const stats = monthMap[mk]?.[day]
                       const ped = stats?.pedidos || 0
                       const fat = stats?.faturado || 0
+                      const pend = getPendentesCumulative(mk, day)
                       const pct = ped > 0 ? (fat / ped) * 100 : null
 
                       return (
@@ -153,6 +179,9 @@ export function PerformanceMatrix() {
                           </td>
                           <td className="border-b border-r border-slate-200 p-2 text-slate-600">
                             {fat > 0 ? fat : ''}
+                          </td>
+                          <td className="border-b border-r border-slate-200 p-2 text-slate-600">
+                            {pend > 0 ? pend : ''}
                           </td>
                           <td
                             className={cn(
