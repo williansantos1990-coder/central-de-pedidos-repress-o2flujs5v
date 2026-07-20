@@ -1,9 +1,9 @@
 import { differenceInCalendarDays } from 'date-fns'
 
 export function calcularDiasAtrasos(
-  terminoSep: Date | null,
+  dataSeparacao: Date | null,
   envioLiberacao: Date | null,
 ): number | null {
-  if (!terminoSep || !envioLiberacao) return null
-  return differenceInCalendarDays(terminoSep, envioLiberacao)
+  if (!dataSeparacao || !envioLiberacao) return null
+  return differenceInCalendarDays(dataSeparacao, envioLiberacao)
 }

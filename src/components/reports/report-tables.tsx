@@ -138,10 +138,7 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
               </TableCell>
               <TableCell className="text-center font-medium whitespace-nowrap">
                 {(() => {
-                  const dias = calcularDiasAtrasos(
-                    parsePBDate(order.termino_sep),
-                    parsePBDate(order.envio_liberacao),
-                  )
+                  const dias = calcularDiasAtrasos(dataSep, parsePBDate(order.envio_liberacao))
                   if (dias === null) return '-'
                   return (
                     <span

@@ -108,10 +108,9 @@ export function exportOrdersToCSV({ pedve012, pedve005, transportadoras }: Expor
         const prevEntrParsed = parsePBDate(p012.prev_entr)
         const prazo = transp?.prazo_de_entrega
         if (col.key === 'dias_atrasos') {
-          const dias = calcularDiasAtrasos(
-            parsePBDate(p012.termino_sep),
-            parsePBDate(p012.envio_liberacao),
-          )
+          const dataSepCalc =
+            prevEntrParsed && prazo ? calcularDataSeparacao(prevEntrParsed, prazo) : null
+          const dias = calcularDiasAtrasos(dataSepCalc, parsePBDate(p012.envio_liberacao))
           return dias === null ? '' : escapeCsvCell(dias)
         }
         if (col.key === 'data_sep' && prevEntrParsed && prazo) {
