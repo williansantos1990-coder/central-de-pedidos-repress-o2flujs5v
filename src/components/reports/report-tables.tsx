@@ -141,7 +141,7 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
                 {formatDate(dataSegura)}
               </TableCell>
               <TableCell className="text-center font-medium text-slate-700">
-                {p005?.qtd_itens ?? 0}
+                {order.nr_itens ?? 0}
               </TableCell>
             </TableRow>
           )
