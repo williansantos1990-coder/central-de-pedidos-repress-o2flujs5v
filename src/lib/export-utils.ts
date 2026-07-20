@@ -33,7 +33,7 @@ const EXPORT_COLUMNS: { key: string; label: string; from: CollectionSource }[] =
   { key: 'dias_atrasos', label: 'Dias_Atrasos', from: 'calculated' },
   { key: 'data_sep', label: 'Data Sep.', from: 'calculated' },
   { key: 'data_segura', label: 'Data Segura', from: 'calculated' },
-  { key: 'nr_itens', label: 'Itens', from: 'p012' },
+  { key: 'nr_itens', label: 'Nr Itens', from: 'p012' },
 ]
 
 const DATE_FIELDS = new Set(['emissao', 'envio_liberacao', 'prev_entr', 'transmitir_nfe'])

@@ -99,7 +99,7 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
             Data Segura
           </TableHead>
           <TableHead className="text-xs font-semibold text-slate-600 whitespace-nowrap text-right">
-            Itens
+            Nr Itens
           </TableHead>
         </TableRow>
       </TableHeader>
