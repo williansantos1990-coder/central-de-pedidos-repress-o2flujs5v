@@ -27,8 +27,7 @@ interface SeparacaoReportProps {
 export function SeparacaoReport({ pedve012, pedve005, transportadoras }: SeparacaoReportProps) {
   const [search, setSearch] = useState('')
   const [selectedGrupos, setSelectedGrupos] = useState<string[]>([])
-  const [cubagemMin, setCubagemMin] = useState('')
-  const [cubagemMax, setCubagemMax] = useState('')
+  const [selectedCubagens, setSelectedCubagens] = useState<string[]>([])
   const [nrItensMin, setNrItensMin] = useState('')
   const [nrItensMax, setNrItensMax] = useState('')
   const filters = useCascadingFilters(pedve012)
@@ -41,10 +40,19 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
     return Array.from(set).sort()
   }, [pedve012])
 
+  const availableCubagens = useMemo(() => {
+    const set = new Set<string>()
+    pedve012.forEach((r) => {
+      if (r.cubagem_local_estoque != null) {
+        set.add(String(r.cubagem_local_estoque))
+      }
+    })
+    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b))
+  }, [pedve012])
+
   const hasExtraFilters =
     selectedGrupos.length > 0 ||
-    cubagemMin !== '' ||
-    cubagemMax !== '' ||
+    selectedCubagens.length > 0 ||
     nrItensMin !== '' ||
     nrItensMax !== ''
 
@@ -66,14 +74,11 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
       result = result.filter((r) => r.grupo && grupoSet.has(r.grupo))
     }
 
-    const cMin = cubagemMin !== '' ? parseFloat(cubagemMin) : null
-    const cMax = cubagemMax !== '' ? parseFloat(cubagemMax) : null
-    if (cMin !== null || cMax !== null) {
+    if (selectedCubagens.length > 0) {
+      const cubagemSet = new Set(selectedCubagens)
       result = result.filter((r) => {
-        const val = r.cubagem_local_estoque ?? 0
-        if (cMin !== null && val < cMin) return false
-        if (cMax !== null && val > cMax) return false
-        return true
+        if (r.cubagem_local_estoque == null) return false
+        return cubagemSet.has(String(r.cubagem_local_estoque))
       })
     }
 
@@ -89,15 +94,7 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
     }
 
     return result
-  }, [
-    filters.filteredRecords,
-    search,
-    selectedGrupos,
-    cubagemMin,
-    cubagemMax,
-    nrItensMin,
-    nrItensMax,
-  ])
+  }, [filters.filteredRecords, search, selectedGrupos, selectedCubagens, nrItensMin, nrItensMax])
 
   const handleExport = () => {
     exportOrdersToCSV({ pedve012: filteredBySearch, pedve005, transportadoras })
@@ -106,8 +103,7 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
   const clearAll = () => {
     filters.clearAll()
     setSelectedGrupos([])
-    setCubagemMin('')
-    setCubagemMax('')
+    setSelectedCubagens([])
     setNrItensMin('')
     setNrItensMax('')
   }
@@ -179,26 +175,14 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
             onChange={setSelectedGrupos}
             selectAllLabel="Todos os Grupos"
           />
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-700">Cubagem Local Estoque</span>
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                placeholder="Mín"
-                value={cubagemMin}
-                onChange={(e) => setCubagemMin(e.target.value)}
-                className="w-[90px] h-9 bg-white border-slate-200"
-              />
-              <span className="text-slate-400 text-xs">-</span>
-              <Input
-                type="number"
-                placeholder="Máx"
-                value={cubagemMax}
-                onChange={(e) => setCubagemMax(e.target.value)}
-                className="w-[90px] h-9 bg-white border-slate-200"
-              />
-            </div>
-          </div>
+          <CascadingFilter
+            label="Cubagem Local Estoque"
+            placeholder="Todas as cubagens"
+            options={availableCubagens}
+            selected={selectedCubagens}
+            onChange={setSelectedCubagens}
+            selectAllLabel="Todas as Cubagens"
+          />
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-slate-700">Nr Itens</span>
             <div className="flex items-center gap-1">
