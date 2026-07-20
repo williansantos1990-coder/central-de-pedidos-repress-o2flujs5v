@@ -15,7 +15,7 @@ export interface Pedve012Record extends RecordModel {
   qtd_total: number
   nr_itens: number
   nr_ends: number
-  cubagem_local_estoque: number
+  cubagem_local_estoque: string
   volume_local_estoque: number
   emissao: string
   prev_entr: string

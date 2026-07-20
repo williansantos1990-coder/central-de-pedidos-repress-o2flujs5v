@@ -92,7 +92,6 @@ const NUMBER_FIELDS = new Set([
   'qtd_total',
   'nr_itens',
   'nr_ends',
-  'cubagem_local_estoque',
   'volume_local_estoque',
   'vl_ped_rs',
   'vl_ord_rem_rs',
@@ -154,7 +153,11 @@ export function mapSheetData(
   headers: string[],
   rows: string[][],
   fieldNames: string[],
+  collectionNumberFields?: string[],
 ): MappedData {
+  const numFields = collectionNumberFields
+    ? new Set([...NUMBER_FIELDS, ...collectionNumberFields])
+    : NUMBER_FIELDS
   const headerMap: { col: number; field: string }[] = []
   for (let h = 0; h < headers.length; h++) {
     if (!headers[h] || headers[h].trim() === '') continue
@@ -171,7 +174,7 @@ export function mapSheetData(
       if (DATE_FIELDS.has(field)) {
         const formatted = formatDateValue(value)
         if (formatted) record[field] = formatted
-      } else if (NUMBER_FIELDS.has(field)) {
+      } else if (numFields.has(field)) {
         const num = parseFloat(value.toString().replace(',', '.'))
         if (!isNaN(num)) record[field] = num
       } else {

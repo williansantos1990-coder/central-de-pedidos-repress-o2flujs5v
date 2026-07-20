@@ -173,12 +173,7 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
                 {formatDate(dataSegura)}
               </TableCell>
               <TableCell className="text-sm text-slate-700 whitespace-nowrap text-right">
-                {r.cubagem_local_estoque != null
-                  ? r.cubagem_local_estoque.toLocaleString('pt-BR', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })
-                  : ''}
+                {r.cubagem_local_estoque ?? ''}
               </TableCell>
               <TableCell className="text-sm text-slate-700 whitespace-nowrap text-right">
                 {r.nr_itens ?? ''}

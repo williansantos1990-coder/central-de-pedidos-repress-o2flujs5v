@@ -110,7 +110,7 @@ export function useCascadingFilters(records: Pedve012Record[]): CascadingFilters
     applyFiltersExcept('cubagens').forEach((r) => {
       if (r.cubagem_local_estoque != null) set.add(String(r.cubagem_local_estoque))
     })
-    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b))
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'))
   }, [applyFiltersExcept])
 
   const availableNrItens = useMemo(() => {

@@ -95,11 +95,11 @@ export function Pedve012Report() {
       result = result.filter((r) => r.grupo && grupoSet.has(r.grupo))
     }
 
-    const cMin = cubagemMin !== '' ? parseFloat(cubagemMin) : null
-    const cMax = cubagemMax !== '' ? parseFloat(cubagemMax) : null
+    const cMin = cubagemMin !== '' ? cubagemMin : null
+    const cMax = cubagemMax !== '' ? cubagemMax : null
     if (cMin !== null || cMax !== null) {
       result = result.filter((r) => {
-        const val = r.cubagem_local_estoque ?? 0
+        const val = r.cubagem_local_estoque ?? ''
         if (cMin !== null && val < cMin) return false
         if (cMax !== null && val > cMax) return false
         return true

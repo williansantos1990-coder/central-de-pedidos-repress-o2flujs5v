@@ -27,7 +27,7 @@ export interface ImportProgress {
 
 const COLLECTION_CONFIG: Record<
   string,
-  { label: string; sheet: string; required: string[]; fields: string[] }
+  { label: string; sheet: string; required: string[]; fields: string[]; numberFields?: string[] }
 > = {
   pedve012: {
     label: 'PEDVE012',
@@ -105,6 +105,7 @@ const COLLECTION_CONFIG: Record<
       'qtd_itens',
       'observacao',
     ],
+    numberFields: ['cubagem_local_estoque'],
   },
   transportadoras: {
     label: 'Transportadoras',
@@ -168,7 +169,12 @@ export async function importAllData(
         })
         continue
       }
-      const { records, headerMap } = mapSheetData(sheet.headers, sheet.rows, config.fields)
+      const { records, headerMap } = mapSheetData(
+        sheet.headers,
+        sheet.rows,
+        config.fields,
+        config.numberFields,
+      )
       const mappedFields = new Set(headerMap.map((h) => h.field))
       const missing = config.required.filter((f) => !mappedFields.has(f))
       if (missing.length > 0) {
