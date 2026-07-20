@@ -28,8 +28,7 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
   const [search, setSearch] = useState('')
   const [selectedGrupos, setSelectedGrupos] = useState<string[]>([])
   const [selectedCubagens, setSelectedCubagens] = useState<string[]>([])
-  const [nrItensMin, setNrItensMin] = useState('')
-  const [nrItensMax, setNrItensMax] = useState('')
+  const [selectedNrItens, setSelectedNrItens] = useState<string[]>([])
   const filters = useCascadingFilters(pedve012)
 
   const availableGrupos = useMemo(() => {
@@ -50,11 +49,16 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
     return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b))
   }, [pedve012])
 
+  const availableNrItens = useMemo(() => {
+    const set = new Set<string>()
+    pedve012.forEach((r) => {
+      if (r.nr_itens != null) set.add(String(r.nr_itens))
+    })
+    return Array.from(set).sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+  }, [pedve012])
+
   const hasExtraFilters =
-    selectedGrupos.length > 0 ||
-    selectedCubagens.length > 0 ||
-    nrItensMin !== '' ||
-    nrItensMax !== ''
+    selectedGrupos.length > 0 || selectedCubagens.length > 0 || selectedNrItens.length > 0
 
   const filteredBySearch = useMemo(() => {
     let result = filters.filteredRecords
@@ -82,19 +86,16 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
       })
     }
 
-    const nMin = nrItensMin !== '' ? parseInt(nrItensMin, 10) : null
-    const nMax = nrItensMax !== '' ? parseInt(nrItensMax, 10) : null
-    if (nMin !== null || nMax !== null) {
+    if (selectedNrItens.length > 0) {
+      const nrItensSet = new Set(selectedNrItens)
       result = result.filter((r) => {
-        const val = r.nr_itens ?? 0
-        if (nMin !== null && val < nMin) return false
-        if (nMax !== null && val > nMax) return false
-        return true
+        if (r.nr_itens == null) return false
+        return nrItensSet.has(String(r.nr_itens))
       })
     }
 
     return result
-  }, [filters.filteredRecords, search, selectedGrupos, selectedCubagens, nrItensMin, nrItensMax])
+  }, [filters.filteredRecords, search, selectedGrupos, selectedCubagens, selectedNrItens])
 
   const handleExport = () => {
     exportOrdersToCSV({ pedve012: filteredBySearch, pedve005, transportadoras })
@@ -104,8 +105,7 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
     filters.clearAll()
     setSelectedGrupos([])
     setSelectedCubagens([])
-    setNrItensMin('')
-    setNrItensMax('')
+    setSelectedNrItens([])
   }
 
   const hasActiveFilters = filters.hasActiveFilters || hasExtraFilters
@@ -183,26 +183,14 @@ export function SeparacaoReport({ pedve012, pedve005, transportadoras }: Separac
             onChange={setSelectedCubagens}
             selectAllLabel="Todas as Cubagens"
           />
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-700">Nr Itens</span>
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                placeholder="Mín"
-                value={nrItensMin}
-                onChange={(e) => setNrItensMin(e.target.value)}
-                className="w-[90px] h-9 bg-white border-slate-200"
-              />
-              <span className="text-slate-400 text-xs">-</span>
-              <Input
-                type="number"
-                placeholder="Máx"
-                value={nrItensMax}
-                onChange={(e) => setNrItensMax(e.target.value)}
-                className="w-[90px] h-9 bg-white border-slate-200"
-              />
-            </div>
-          </div>
+          <CascadingFilter
+            label="Nr Itens"
+            placeholder="Todos os nr itens"
+            options={availableNrItens}
+            selected={selectedNrItens}
+            onChange={setSelectedNrItens}
+            selectAllLabel="Todos os Nr Itens"
+          />
           {hasActiveFilters && (
             <Button
               variant="ghost"
