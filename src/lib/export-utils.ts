@@ -22,6 +22,7 @@ const EXPORT_COLUMNS: { key: string; label: string; from: CollectionSource }[] =
   { key: 'pedido', label: 'Pedido', from: 'p012' },
   { key: 'situacao', label: 'Situação', from: 'p012' },
   { key: 'cliente', label: 'Cliente', from: 'p012' },
+  { key: 'grupo', label: 'Grupo', from: 'p012' },
   { key: 'cidade', label: 'Cidade', from: 'p005' },
   { key: 'tipo_entrega', label: 'Tipo de Entrega', from: 'p012' },
   { key: 'transportadora', label: 'Transportadora', from: 'transp' },
