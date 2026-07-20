@@ -99,6 +99,9 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
             Data Segura
           </TableHead>
           <TableHead className="text-xs font-semibold text-slate-600 whitespace-nowrap text-right">
+            Cubagem Local Estoque
+          </TableHead>
+          <TableHead className="text-xs font-semibold text-slate-600 whitespace-nowrap text-right">
             Nr Itens
           </TableHead>
         </TableRow>
@@ -106,7 +109,7 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
       <TableBody>
         {items.length === 0 && (
           <TableRow>
-            <TableCell colSpan={15} className="text-center text-slate-400 py-8">
+            <TableCell colSpan={16} className="text-center text-slate-400 py-8">
               Nenhum registro encontrado.
             </TableCell>
           </TableRow>
@@ -168,6 +171,14 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
               </TableCell>
               <TableCell className="text-sm text-slate-600 whitespace-nowrap">
                 {formatDate(dataSegura)}
+              </TableCell>
+              <TableCell className="text-sm text-slate-700 whitespace-nowrap text-right">
+                {r.cubagem_local_estoque != null
+                  ? r.cubagem_local_estoque.toLocaleString('pt-BR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
+                  : ''}
               </TableCell>
               <TableCell className="text-sm text-slate-700 whitespace-nowrap text-right">
                 {r.nr_itens ?? ''}

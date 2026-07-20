@@ -33,6 +33,7 @@ const EXPORT_COLUMNS: { key: string; label: string; from: CollectionSource }[] =
   { key: 'dias_atrasos', label: 'Dias_Atrasos', from: 'calculated' },
   { key: 'data_sep', label: 'Data Sep.', from: 'calculated' },
   { key: 'data_segura', label: 'Data Segura', from: 'calculated' },
+  { key: 'cubagem_local_estoque', label: 'Cubagem Local Estoque', from: 'p012' },
   { key: 'nr_itens', label: 'Nr Itens', from: 'p012' },
 ]
 
