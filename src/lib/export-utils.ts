@@ -29,7 +29,7 @@ const EXPORT_COLUMNS: { key: string; label: string; from: CollectionSource }[] =
   { key: 'emissao', label: 'Emissão', from: 'p012' },
   { key: 'envio_liberacao', label: 'Envio/Liberação', from: 'p012' },
   { key: 'prev_entr', label: 'Prev. Entr.', from: 'p012' },
-  { key: 'dias_atrasos', label: 'Dias Atrasos', from: 'calculated' },
+  { key: 'dias_atrasos', label: 'Dias_Atrasos', from: 'calculated' },
   { key: 'data_sep', label: 'Data Sep.', from: 'calculated' },
   { key: 'data_segura', label: 'Data Segura', from: 'calculated' },
   { key: 'nr_itens', label: 'Itens', from: 'p012' },

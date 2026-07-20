@@ -69,7 +69,7 @@ export function Pedve012Table({ items, pedve005, transportadoras }: Pedve012Tabl
           <TableHead className="font-semibold text-slate-700">Emissão</TableHead>
           <TableHead className="font-semibold text-slate-700">Envio/Liberação</TableHead>
           <TableHead className="font-semibold text-slate-700">Prev. Entr.</TableHead>
-          <TableHead className="font-semibold text-slate-700 text-center">Dias Atrasos</TableHead>
+          <TableHead className="font-semibold text-slate-700 text-center">Dias_Atrasos</TableHead>
           <TableHead className="font-semibold text-primary bg-primary/5">Data Sep.</TableHead>
           <TableHead className="font-semibold text-success bg-success/5">Data Segura</TableHead>
           <TableHead className="font-semibold text-slate-700 text-center">Itens</TableHead>
